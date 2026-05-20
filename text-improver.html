@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>أداة تحسين النصوص التحريرية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--primary:#1B3A5C;--primary-light:#234b78;--primary-dark:#122740;--accent:#C9A84C;--accent-light:#d9bc78;--bg:#F4F6F9;--surface:#FFFFFF;--text-primary:#1A1A2E;--text-secondary:#5A6A7A;--text-muted:#8a9aaa;--success:#2D6A4F;--success-light:#e8f5ee;--warning:#E76F51;--warning-light:#fef3ed;--danger:#C62828;--danger-light:#fdecea;--info:#1B3A5C;--info-light:#e8eef5;--border:#dde3ea;--shadow-sm:0 1px 3px rgba(0,0,0,0.08);--shadow:0 2px 8px rgba(0,0,0,0.10);--shadow-lg:0 4px 20px rgba(0,0,0,0.12);--radius-sm:4px;--radius:8px;--radius-lg:12px;--sidebar-w:240px;--font-main:'Tajawal','Noto Naskh Arabic',sans-serif;--font-text:'Noto Naskh Arabic','Tajawal',serif}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px}
+body{font-family:var(--font-main);background:var(--bg);color:var(--text-primary);direction:rtl;min-height:100vh;line-height:1.7}
+#app{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-w);background:var(--primary);display:flex;flex-direction:column;position:fixed;top:0;right:0;bottom:0;z-index:100}
+.sidebar-logo{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,0.1)}
+.sidebar-logo h1{font-size:14px;font-weight:700;color:#fff;line-height:1.4}
+.sidebar-logo span{font-size:11px;color:var(--accent);display:block;margin-top:2px}
+.sidebar-user{padding:10px 16px;background:rgba(255,255,255,0.06);border-bottom:1px solid rgba(255,255,255,0.1);font-size:12px;color:rgba(255,255,255,0.8)}
+.sidebar-user strong{color:var(--accent);display:block;font-size:13px}
+nav{flex:1;padding:6px 0;overflow-y:auto}
+nav a{display:flex;align-items:center;gap:10px;padding:10px 16px;color:rgba(255,255,255,0.75);text-decoration:none;font-size:13px;font-weight:500;border-right:3px solid transparent;transition:all .2s;cursor:pointer}
+nav a:hover{background:rgba(255,255,255,0.08);color:#fff}
+nav a.active{background:rgba(201,168,76,0.15);color:var(--accent);border-right-color:var(--accent)}
+.sidebar-footer{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.1)}
+.sidebar-footer button{width:100%;background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.7);padding:8px;border-radius:var(--radius-sm);font-family:var(--font-main);font-size:13px;cursor:pointer;transition:all .2s}
+.sidebar-footer button:hover{background:rgba(255,255,255,0.1);color:#fff}
+.member-topbar{background:var(--primary);color:#fff;padding:0 20px;height:58px;display:flex;align-items:center;justify-content:space-between;position:fixed;top:0;right:0;left:0;z-index:100;box-shadow:var(--shadow)}
+.member-topbar h1{font-size:15px;font-weight:700;color:#fff}
+.member-topbar .topbar-sub{font-size:11px;color:var(--accent)}
+.member-topbar nav{display:flex;gap:4px}
+.member-topbar nav a{padding:7px 14px;border-radius:var(--radius-sm);font-size:13px;border-right:none;background:transparent;color:rgba(255,255,255,0.75)}
+.member-topbar nav a.active{background:rgba(201,168,76,0.2);color:var(--accent)}
+.member-topbar .user-chip{font-size:12px;color:rgba(255,255,255,0.8)}
+.member-topbar .user-chip strong{color:var(--accent)}
+.main-content{margin-right:var(--sidebar-w);flex:1;min-height:100vh;padding:24px}
+.main-content.no-sidebar{margin-right:0;margin-top:58px;padding:20px;max-width:860px;margin-left:auto;margin-right:auto}
+h2{font-size:21px;font-weight:700;color:var(--primary);margin-bottom:4px}
+h3{font-size:16px;font-weight:600;color:var(--primary);margin-bottom:10px}
+h4{font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:6px}
+.page-header{margin-bottom:22px;padding-bottom:14px;border-bottom:2px solid var(--accent);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.page-header p{font-size:13px;color:var(--text-secondary)}
+.card{background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);border:1px solid var(--border);padding:18px;margin-bottom:14px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.card-header h3{margin-bottom:0}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);font-family:var(--font-main);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;text-decoration:none;white-space:nowrap}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover:not(:disabled){background:var(--primary-light)}
+.btn-accent{background:var(--accent);color:#fff}
+.btn-accent:hover:not(:disabled){background:var(--accent-light)}
+.btn-success{background:var(--success);color:#fff}
+.btn-success:hover:not(:disabled){background:#235a41}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover:not(:disabled){background:#a82020}
+.btn-outline{background:transparent;border:1.5px solid var(--primary);color:var(--primary)}
+.btn-outline:hover:not(:disabled){background:var(--info-light)}
+.btn-outline-danger{background:transparent;border:1.5px solid var(--danger);color:var(--danger)}
+.btn-outline-danger:hover:not(:disabled){background:var(--danger-light)}
+.btn-ghost{background:transparent;color:var(--text-secondary);border:1px solid var(--border)}
+.btn-ghost:hover:not(:disabled){background:var(--bg);color:var(--text-primary)}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn-lg{padding:11px 26px;font-size:15px}
+.btn-full{width:100%;justify-content:center}
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:5px}
+.form-label .req{color:var(--danger);margin-right:2px}
+.form-control{width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:var(--radius);font-family:var(--font-main);font-size:14px;color:var(--text-primary);background:var(--surface);transition:border-color .2s,box-shadow .2s;direction:rtl}
+.form-control:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(201,168,76,0.15)}
+.form-control::placeholder{color:var(--text-muted)}
+textarea.form-control{resize:vertical;min-height:90px;line-height:1.8;font-family:var(--font-text)}
+.form-hint{font-size:12px;color:var(--text-secondary);margin-top:3px}
+.form-error{font-size:12px;color:var(--danger);margin-top:3px}
+.char-count{font-size:11px;color:var(--text-muted);text-align:left;margin-top:3px}
+.input-group{display:flex;gap:8px}
+.input-group .form-control{flex:1}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-success{background:var(--success-light);color:var(--success)}
+.badge-warning{background:var(--warning-light);color:#8b3e22}
+.badge-danger{background:var(--danger-light);color:var(--danger)}
+.badge-primary{background:var(--info-light);color:var(--primary)}
+.badge-accent{background:rgba(201,168,76,0.15);color:#a07a20}
+.badge-muted{background:var(--bg);color:var(--text-secondary);border:1px solid var(--border)}
+.score-circle{width:66px;height:66px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;border:3px solid currentColor;flex-shrink:0}
+.score-circle .sn{font-size:24px;font-weight:700;line-height:1}
+.score-circle .sd{font-size:11px;opacity:.7}
+.score-green{color:var(--success)}.score-blue{color:var(--primary)}.score-orange{color:var(--warning)}.score-red{color:var(--danger)}
+.score-bar-track{height:7px;background:var(--bg);border-radius:4px;overflow:hidden;border:1px solid var(--border);margin:8px 0}
+.score-bar-fill{height:100%;border-radius:4px;transition:width 1s ease}
+.weakness-item{border:1px solid var(--border);border-radius:var(--radius);padding:13px 15px;margin-bottom:10px;border-right:4px solid var(--warning)}
+.weakness-item.sev-حرج{border-right-color:var(--danger);background:var(--danger-light)}
+.weakness-item.sev-متوسط{border-right-color:var(--warning);background:var(--warning-light)}
+.weakness-item.sev-طفيف{border-right-color:var(--accent);background:rgba(201,168,76,0.06)}
+.weakness-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:7px;flex-wrap:wrap}
+.weakness-title{font-size:14px;font-weight:700}
+.weakness-quote{background:rgba(0,0,0,0.05);border-right:3px solid var(--text-secondary);padding:7px 11px;margin:7px 0;font-family:var(--font-text);font-size:13px;border-radius:0 var(--radius-sm) var(--radius-sm) 0;font-style:italic}
+.weakness-expl{font-size:13px;color:var(--text-secondary);line-height:1.7}
+.tabs{display:flex;gap:2px;border-bottom:2px solid var(--border);margin-bottom:18px}
+.tab-btn{padding:9px 18px;border:none;background:transparent;font-family:var(--font-main);font-size:13px;font-weight:600;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
+.tab-btn:hover{color:var(--primary)}
+.tab-btn.active{color:var(--primary);border-bottom-color:var(--accent)}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+.alert{padding:11px 14px;border-radius:var(--radius);font-size:13px;margin-bottom:14px;display:flex;align-items:flex-start;gap:9px}
+.alert-warning{background:var(--warning-light);border:1px solid #f0a58a;color:#8b3e22}
+.alert-success{background:var(--success-light);border:1px solid #a7d4bc;color:#1a5235}
+.alert-danger{background:var(--danger-light);border:1px solid #f0a8a8;color:#7a1a1a}
+.alert-info{background:var(--info-light);border:1px solid #b5c8e0;color:var(--primary-dark)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s}
+.modal-overlay.hidden{display:none}
+.modal-box{background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);max-width:510px;width:100%;overflow:hidden;animation:slideUp .25s}
+.modal-header{padding:16px 18px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:space-between}
+.modal-header h3{color:#fff;margin-bottom:0;font-size:15px}
+.modal-close{background:none;border:none;color:rgba(255,255,255,0.7);font-size:18px;cursor:pointer;padding:0;line-height:1}
+.modal-close:hover{color:#fff}
+.modal-body{padding:18px}
+.modal-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:9px;justify-content:flex-end}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;border-top:3px solid var(--accent)}
+.stat-card .sv{font-size:30px;font-weight:700;color:var(--primary);line-height:1}
+.stat-card .sl{font-size:12px;color:var(--text-secondary);margin-top:3px}
+.history-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px 15px;margin-bottom:9px;transition:box-shadow .2s}
+.history-item:hover{box-shadow:var(--shadow)}
+.history-item-header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:7px}
+.history-item-meta{font-size:12px;color:var(--text-secondary)}
+.history-item-text{font-size:13px;color:var(--text-secondary);font-family:var(--font-text);line-height:1.6;margin-bottom:9px}
+.history-item-actions{display:flex;gap:7px;flex-wrap:wrap}
+.history-detail{margin-top:13px;padding-top:13px;border-top:1px solid var(--border);display:none}
+.history-detail.open{display:block}
+.kb-example{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:13px;margin-bottom:9px}
+.kb-eg-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.kb-eg-col label{font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;display:block}
+.kb-eg-col p{font-family:var(--font-text);font-size:13px;line-height:1.7;color:var(--text-primary)}
+.kb-eg-expl{margin-top:9px;padding-top:9px;border-top:1px solid var(--border);font-size:13px;color:var(--text-secondary)}
+.home-screen{min-height:100vh;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+.home-header{text-align:center;margin-bottom:36px}
+.app-brand{display:inline-flex;align-items:center;gap:10px;margin-bottom:16px;padding:8px 20px;background:var(--primary);border-radius:var(--radius);color:var(--accent);font-size:12px;font-weight:700;letter-spacing:1px}
+.app-title{font-size:26px;font-weight:700;color:var(--primary);line-height:1.3}
+.app-subtitle{font-size:14px;color:var(--text-secondary);margin-top:6px}
+.role-cards{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:620px;width:100%}
+.role-card{background:var(--surface);border:2px solid var(--border);border-radius:var(--radius-lg);padding:26px 22px;text-align:center;cursor:pointer;transition:all .25s;box-shadow:var(--shadow-sm)}
+.role-card:hover{border-color:var(--primary);box-shadow:var(--shadow);transform:translateY(-2px)}
+.role-card.selected{border-color:var(--accent);box-shadow:0 0 0 3px rgba(201,168,76,0.2)}
+.role-card .role-icon{font-size:38px;margin-bottom:10px;display:block}
+.role-card .role-title{font-size:17px;font-weight:700;color:var(--primary);margin-bottom:5px}
+.role-card .role-desc{font-size:12px;color:var(--text-secondary)}
+.role-card .role-form{margin-top:14px;display:none}
+.role-card.selected .role-form{display:block}
+.setup-step{display:flex;gap:14px;margin-bottom:14px;padding:18px;background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border);cursor:pointer;transition:box-shadow .2s}
+.setup-step:hover{box-shadow:var(--shadow)}
+.setup-step-num{width:34px;height:34px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
+.setup-step.done .setup-step-num{background:var(--success)}
+.setup-step.optional .setup-step-num{background:var(--text-muted)}
+.loading-overlay{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center}
+.spinner{width:42px;height:42px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:18px}
+.loading-msg{font-size:15px;color:var(--primary);font-weight:600;margin-bottom:5px}
+.loading-sub{font-size:13px;color:var(--text-secondary)}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-secondary)}
+.empty-state h3{color:var(--text-secondary);font-size:15px;margin-bottom:7px}
+.filters-row{display:flex;gap:9px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px;padding:14px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border)}
+.filters-row .form-group{margin-bottom:0;min-width:130px;flex:1}
+.improved-text-box{background:#f0f8f4;border:1px solid #a7d4bc;border-radius:var(--radius);padding:18px;font-family:var(--font-text);font-size:15px;line-height:2;color:var(--text-primary);white-space:pre-wrap;direction:rtl}
+.section-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;margin-bottom:18px}
+.section-block h3{font-size:14px;font-weight:700;color:var(--primary);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.file-upload-area{border:2px dashed var(--border);border-radius:var(--radius);padding:14px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg)}
+.file-upload-area:hover{border-color:var(--accent);background:rgba(201,168,76,0.05)}
+.file-upload-area input{display:none}
+.file-upload-area p{font-size:12px;color:var(--text-secondary);margin-top:3px}
+.pw-group{position:relative}
+.pw-group .form-control{padding-left:38px}
+.pw-toggle{position:absolute;left:9px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:13px;padding:4px}
+.divider{border:none;border-top:1px solid var(--border);margin:18px 0}
+.hidden{display:none!important}
+.text-muted{color:var(--text-secondary)}
+.text-sm{font-size:13px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.print-header{display:none;text-align:center;border-bottom:2px solid var(--primary);padding-bottom:14px;margin-bottom:18px}
+@media print{.sidebar,.member-topbar,.no-print{display:none!important}.main-content,.main-content.no-sidebar{margin:0!important;padding:20px!important;max-width:none!important}body{background:#fff}.print-header{display:block!important}.btn{display:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(18px);opacity:0}to{transform:translateY(0);opacity:1}}
+@media(max-width:768px){.sidebar{transform:translateX(100%)}.main-content{margin-right:0;padding:14px}.role-cards{grid-template-columns:1fr}.grid-2{grid-template-columns:1fr}.kb-eg-grid{grid-template-columns:1fr}.stats-grid{grid-template-columns:repeat(2,1fr)}.filters-row{flex-direction:column}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<div id="screen-home" class="home-screen">
+  <div class="home-header">
+    <div class="app-brand">منظومة إدارة المحتوى المؤسسي</div>
+    <div class="app-title">أداة تحسين النصوص التحريرية</div>
+    <div class="app-subtitle">أداة تحليل النصوص وتحسينها وفق الدليل الإرشادي المؤسسي</div>
+  </div>
+  <div class="role-cards" id="roleCards"></div>
+</div>
+
+<div id="manager-shell" class="hidden" style="display:flex;min-height:100vh;">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>أداة تحسين النصوص</h1>
+      <span>منظومة المحتوى المؤسسي</span>
+    </div>
+    <div class="sidebar-user" id="sidebarUser"></div>
+    <nav id="managerNav">
+      <a href="#" data-s="dashboard" onclick="navTo('dashboard');return false;">&#9783; لوحة المدير</a>
+      <a href="#" data-s="analysis" onclick="navTo('analysis');return false;">&#9998; تحليل نص جديد</a>
+      <a href="#" data-s="history" onclick="navTo('history');return false;">&#9776; سجل التحليلات</a>
+      <a href="#" data-s="knowledge" onclick="navTo('knowledge');return false;">&#9783; قاعدة المعرفة</a>
+      <a href="#" data-s="settings" onclick="navTo('settings');return false;">&#9881; الإعدادات</a>
+    </nav>
+    <div class="sidebar-footer"><button onclick="logout()">تسجيل الخروج</button></div>
+  </aside>
+  <main class="main-content" id="managerMain"></main>
+</div>
+
+<div id="member-shell" class="hidden" style="display:flex;flex-direction:column;min-height:100vh;">
+  <header class="member-topbar">
+    <div><h1>أداة تحسين النصوص</h1><div class="topbar-sub">منظومة المحتوى المؤسسي</div></div>
+    <nav>
+      <a href="#" data-ms="analysis" onclick="memberNav('analysis');return false;" class="active">تحليل نص جديد</a>
+      <a href="#" data-ms="history" onclick="memberNav('history');return false;">سجلاتي</a>
+    </nav>
+    <div class="user-chip" id="memberTopbarUser"></div>
+  </header>
+  <main class="main-content no-sidebar" id="memberMain"></main>
+</div>
+
+<div id="modalOverlay" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modalTitle">تأكيد</h3>
+      <button class="modal-close" onclick="closeModal()">&#10005;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<div id="toast" style="position:fixed;bottom:22px;left:22px;z-index:999;display:none;">
+  <div id="toastInner" style="background:var(--primary);color:#fff;padding:11px 18px;border-radius:var(--radius);box-shadow:var(--shadow-lg);font-size:13px;max-width:300px;"></div>
+</div>
+
+</div>
+<script>
+'use strict';
+
+// ═══════════════════════ DATA LAYER ═══════════════════════
+const DEFAULT_CTS=[
+  {id:'ct1',name:'مراسلة رسمية',description:'',specificGuidelines:'',examples:[]},
+  {id:'ct2',name:'بيان صحفي',description:'',specificGuidelines:'',examples:[]},
+  {id:'ct3',name:'ترجمة',description:'',specificGuidelines:'',examples:[]},
+  {id:'ct4',name:'محتوى متنوع',description:'',specificGuidelines:'',examples:[]}
+];
+
+let D=null; // appData
+let S={ // appState
+  role:null,member:null,screen:null,
+  analysis:null,saved:false,
+  histFilters:{member:'',type:'',scoreMin:'',scoreMax:'',dateFrom:'',dateTo:''},
+  kbTab:'guide',kbCtId:'ct1'
+};
+
+function loadData(){
+  try{
+    const r=localStorage.getItem('text_improver_data');
+    if(r){
+      D=JSON.parse(r);
+      if(!D.knowledgeBase)D.knowledgeBase={styleGuide:'',styleGuideUpdated:null,contentTypes:JSON.parse(JSON.stringify(DEFAULT_CTS)),generalExamples:[]};
+      if(!D.knowledgeBase.contentTypes||!D.knowledgeBase.contentTypes.length)D.knowledgeBase.contentTypes=JSON.parse(JSON.stringify(DEFAULT_CTS));
+      if(!D.knowledgeBase.generalExamples)D.knowledgeBase.generalExamples=[];
+      if(!D.settings)D.settings={apiKey:'',managerPassword:'',evaluatorToolUrl:'https://qais1983.github.io/team-evaluator/'};
+      if(!D.settings.evaluatorToolUrl)D.settings.evaluatorToolUrl='https://qais1983.github.io/team-evaluator/';
+      if(!D.members)D.members=[];
+      if(!D.analyses)D.analyses=[];
+    }else{
+      D={members:[],analyses:[],knowledgeBase:{styleGuide:'',styleGuideUpdated:null,contentTypes:JSON.parse(JSON.stringify(DEFAULT_CTS)),generalExamples:[]},settings:{apiKey:'',managerPassword:'',evaluatorToolUrl:'https://qais1983.github.io/team-evaluator/'}};
+    }
+  }catch(e){
+    D={members:[],analyses:[],knowledgeBase:{styleGuide:'',styleGuideUpdated:null,contentTypes:JSON.parse(JSON.stringify(DEFAULT_CTS)),generalExamples:[]},settings:{apiKey:'',managerPassword:'',evaluatorToolUrl:'https://qais1983.github.io/team-evaluator/'}};
+  }
+}
+function save(){localStorage.setItem('text_improver_data',JSON.stringify(D));}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function fd(iso){if(!iso)return'';const d=new Date(iso);return d.toLocaleDateString('ar-SA',{year:'numeric',month:'short',day:'numeric'});}
+function fdt(iso){if(!iso)return'';const d=new Date(iso);return d.toLocaleDateString('ar-SA',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});}
+function scoreColor(s){if(s>=4.2)return'var(--success)';if(s>=3.5)return'var(--primary)';if(s>=2.8)return'var(--warning)';return'var(--danger)';}
+function scoreClass(s){if(s>=4.2)return'score-green';if(s>=3.5)return'score-blue';if(s>=2.8)return'score-orange';return'score-red';}
+function scoreLabel(s){if(s>=4.5)return'ممتاز';if(s>=4.0)return'جيد جداً';if(s>=3.5)return'جيد';if(s>=3.0)return'مقبول';if(s>=2.5)return'دون المستوى';return'ضعيف';}
+// مستوى الجاهزية — للعرض التطويري (بدون أرقام)
+function readinessLevel(s){
+  if(s>=4.2)return{label:'جاهز للنشر',cls:'badge-success',color:'var(--success)',desc:'النص في مستوى جيد ويمكن نشره بعد مراجعة خفيفة'};
+  if(s>=3.5)return{label:'قريب من مستوى النشر',cls:'badge-primary',color:'var(--primary)',desc:'النص جيد ويحتاج بعض التعديلات قبل النشر'};
+  if(s>=2.8)return{label:'في مسار التطوير',cls:'badge-warning',color:'var(--warning)',desc:'النص يسير في الاتجاه الصحيح ويحتاج مراجعة أعمق'};
+  return{label:'يحتاج مراجعة جوهرية',cls:'badge-danger',color:'var(--danger)',desc:'النص يحتاج إعادة هيكلة قبل المضي قُدُماً'};
+}
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function sevBadge(sv){const m={'حرج':'badge-danger','متوسط':'badge-warning','طفيف':'badge-accent'};return`<span class="badge ${m[sv]||'badge-muted'}">${sv||''}</span>`;}
+
+// ═══════════════════════ TOAST & MODAL ═══════════════════════
+function toast(msg,type='success',ms=3500){
+  const t=document.getElementById('toast'),ti=document.getElementById('toastInner');
+  const c={success:'var(--success)',danger:'var(--danger)',warning:'#7a4a00',info:'var(--primary)'};
+  ti.style.background=c[type]||c.info;ti.textContent=msg;t.style.display='block';
+  setTimeout(()=>{t.style.display='none';},ms);
+}
+function showModal(title,body,btns){
+  document.getElementById('modalTitle').textContent=title;
+  document.getElementById('modalBody').innerHTML=body;
+  const f=document.getElementById('modalFooter');f.innerHTML='';
+  (btns||[]).forEach(b=>{const btn=document.createElement('button');btn.className=`btn ${b.cls||'btn-primary'}`;btn.textContent=b.label;btn.onclick=b.fn;f.appendChild(btn);});
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+function closeModal(){document.getElementById('modalOverlay').classList.add('hidden');}
+
+// ═══════════════════════ NAVIGATION ═══════════════════════
+function showShell(id){
+  ['screen-home','manager-shell','member-shell'].forEach(x=>{
+    const el=document.getElementById(x);
+    el.classList.add('hidden');
+    el.style.display='';
+  });
+  const t=document.getElementById(id);
+  t.classList.remove('hidden');
+  if(id==='manager-shell')t.style.display='flex';
+  if(id==='member-shell')t.style.display='flex';
+}
+function navTo(screen){
+  if(S.analysis&&!S.saved&&screen!=='analysis'){if(!confirm('لم تحفظ نتيجة التحليل. هل تريد المغادرة؟'))return;}
+  S.screen=screen;
+  document.querySelectorAll('#managerNav a').forEach(a=>a.classList.toggle('active',a.dataset.s===screen));
+  const main=document.getElementById('managerMain');
+  if(screen==='dashboard')renderDashboard(main);
+  else if(screen==='analysis')renderAnalysis(main);
+  else if(screen==='history')renderHistory(main);
+  else if(screen==='knowledge')renderKnowledge(main);
+  else if(screen==='settings')renderSettings(main);
+  window.scrollTo(0,0);
+}
+function memberNav(screen){
+  if(S.analysis&&!S.saved&&screen!=='analysis'){if(!confirm('لم تحفظ نتيجة التحليل. هل تريد المغادرة؟'))return;}
+  S.screen=screen;
+  document.querySelectorAll('.member-topbar nav a').forEach(a=>a.classList.toggle('active',a.dataset.ms===screen));
+  const main=document.getElementById('memberMain');
+  if(screen==='analysis')renderAnalysis(main);
+  else if(screen==='history')renderHistory(main);
+  window.scrollTo(0,0);
+}
+function logout(){
+  if(S.analysis&&!S.saved){if(!confirm('لم تحفظ نتيجة التحليل. هل تريد الخروج؟'))return;}
+  S={role:null,member:null,screen:null,analysis:null,saved:false,histFilters:{member:'',type:'',scoreMin:'',scoreMax:'',dateFrom:'',dateTo:''},kbTab:'guide',kbCtId:'ct1'};
+  showShell('screen-home');renderHome();
+}
+
+// ═══════════════════════ HOME SCREEN ═══════════════════════
+function renderHome(){
+  document.getElementById('roleCards').innerHTML=`
+  <div class="role-card" id="managerCard" onclick="selectRole('manager')">
+    <span class="role-icon" style="color:var(--primary);font-size:36px">&#9783;</span>
+    <div class="role-title">أنا مدير الفريق</div>
+    <div class="role-desc">صلاحيات كاملة — إدارة الأعضاء وقاعدة المعرفة والإعدادات</div>
+    <div class="role-form" id="managerForm">
+      <div class="form-group" style="margin-top:12px;text-align:right">
+        <label class="form-label">كلمة مرور المدير</label>
+        <div class="pw-group">
+          <input type="password" id="mgPw" class="form-control" placeholder="أدخل كلمة المرور" onkeydown="if(event.key==='Enter')loginManager()" style="text-align:center">
+          <button class="pw-toggle" onclick="togglePw('mgPw',this)" tabindex="-1">&#128065;</button>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="loginManager()">دخول</button>
+      <div id="mgPwErr" class="form-error" style="margin-top:5px;text-align:center"></div>
+    </div>
+  </div>
+  <div class="role-card" id="memberCard" onclick="selectRole('member')">
+    <span class="role-icon" style="color:var(--accent);font-size:36px">&#128101;</span>
+    <div class="role-title">أنا عضو في الفريق</div>
+    <div class="role-desc">تحليل النصوص ومتابعة سجلاتك الشخصية</div>
+    <div class="role-form" id="memberForm">
+      ${D.members.length===0
+        ?`<div class="alert alert-info" style="margin-top:12px;font-size:12px">لا يوجد أعضاء بعد. يرجى التواصل مع المدير لإضافة الأعضاء.</div>`
+        :`<div class="form-group" style="margin-top:12px;text-align:right">
+            <label class="form-label">اختر اسمك</label>
+            <select id="memSel" class="form-control">
+              <option value="">-- اختر --</option>
+              ${D.members.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join('')}
+            </select>
+           </div>
+           <button class="btn btn-accent btn-full" onclick="loginMember()">دخول</button>
+           <div id="memSelErr" class="form-error" style="margin-top:5px;text-align:center"></div>`
+      }
+    </div>
+  </div>`;
+}
+function selectRole(r){
+  document.getElementById('managerCard').classList.toggle('selected',r==='manager');
+  document.getElementById('memberCard').classList.toggle('selected',r==='member');
+}
+function togglePw(id,btn){const el=document.getElementById(id);if(el.type==='password'){el.type='text';btn.textContent='✕';}else{el.type='password';btn.innerHTML='&#128065;';}}
+function loginManager(){
+  const pw=document.getElementById('mgPw').value.trim();
+  const stored=D.settings.managerPassword;
+  const err=document.getElementById('mgPwErr');
+  if(stored===''||pw===stored){
+    err.textContent='';S.role='manager';S.member={id:'manager',name:'المدير',role:'manager'};
+    document.getElementById('sidebarUser').innerHTML=`<strong>المدير</strong>مدير الفريق`;
+    showShell('manager-shell');
+    if(!D.settings.apiKey&&!D.members.length)renderSetup();
+    else navTo('dashboard');
+  }else{err.textContent='كلمة المرور غير صحيحة';}
+}
+function loginMember(){
+  const sel=document.getElementById('memSel');
+  const err=document.getElementById('memSelErr');
+  if(!sel||!sel.value){err.textContent='يرجى اختيار اسمك';return;}
+  const m=D.members.find(x=>x.id===sel.value);
+  if(!m){err.textContent='العضو غير موجود';return;}
+  S.role='member';S.member=m;
+  document.getElementById('memberTopbarUser').innerHTML=`مرحباً، <strong>${esc(m.name)}</strong>`;
+  showShell('member-shell');memberNav('analysis');
+}
+
+// ═══════════════════════ FIRST-TIME SETUP ═══════════════════════
+function renderSetup(){
+  const main=document.getElementById('managerMain');
+  const hasApi=!!D.settings.apiKey,hasPw=!!D.settings.managerPassword,hasMem=D.members.length>0,hasGuide=!!D.knowledgeBase.styleGuide;
+  const steps=[
+    {done:hasApi,num:1,label:'مفتاح الذكاء الاصطناعي',desc:'أضف مفتاح Claude API لتفعيل التحليل الآلي',go:"navTo('settings')"},
+    {done:hasPw,num:2,label:'كلمة مرور المدير',desc:'حدد كلمة مرور لحماية الوصول كمدير',go:"navTo('settings')"},
+    {done:hasMem,num:3,label:'أعضاء الفريق',desc:'أضف أعضاء الفريق حتى يتمكنوا من استخدام الأداة',go:"navTo('settings')"},
+    {done:hasGuide,num:4,optional:true,label:'الدليل الإرشادي (اختياري)',desc:'أضف الدليل الإرشادي لتحليل أدق وأكثر دقة',go:"navTo('knowledge')"}
+  ];
+  const reqDone=steps.slice(0,3).filter(s=>s.done).length;
+  main.innerHTML=`<div style="max-width:620px;margin:0 auto">
+    <div class="card" style="border-top:3px solid var(--accent);margin-bottom:22px">
+      <h2 style="margin-bottom:5px">مرحباً بك في أداة تحسين النصوص</h2>
+      <p class="text-muted text-sm">للبدء، أكمل الإعداد الأولي. مكتمل: ${reqDone}/3</p>
+      <div style="margin-top:10px;background:var(--bg);border-radius:4px;height:7px;overflow:hidden"><div style="height:100%;background:var(--accent);width:${(reqDone/3)*100}%;border-radius:4px;transition:width .5s"></div></div>
+    </div>
+    ${steps.map(s=>`
+      <div class="setup-step${s.done?' done':''}${s.optional?' optional':''}" onclick="${s.go}">
+        <div class="setup-step-num">${s.done?'✓':s.num}</div>
+        <div style="flex:1"><h4>${s.label}${s.optional?'<span class="badge badge-muted" style="margin-right:8px;font-weight:400">اختياري</span>':''}</h4><p class="text-sm text-muted">${s.desc}</p></div>
+        <span style="color:var(--text-muted);font-size:18px">&lsaquo;</span>
+      </div>`).join('')}
+    ${reqDone>=3?`<div style="text-align:center;margin-top:18px"><button class="btn btn-primary btn-lg" onclick="navTo('dashboard')">الانتقال إلى لوحة المدير</button></div>`:''}
+  </div>`;
+}
+
+// ═══════════════════════ ANALYSIS SCREEN ═══════════════════════
+function renderAnalysis(main){
+  S.analysis=null;S.saved=false;
+  const isManager=S.role==='manager';
+  const memberOptions=isManager?`<select id="aMember" class="form-control"><option value="">-- اختر عضواً --</option>${D.members.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join('')}</select>`:`<div class="form-control" style="background:var(--bg);color:var(--text-secondary)">${esc(S.member.name)}</div>`;
+  main.innerHTML=`
+  <div class="print-header"><h1>أداة تحسين النصوص التحريرية</h1><p id="phInfo"></p></div>
+  <div class="page-header"><div><h2>تحليل نص جديد</h2><p>أدخل النص المراد تحليله وتحسينه</p></div></div>
+  <div class="card">
+    <div class="grid-2" style="margin-bottom:14px">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">العضو <span class="req">*</span></label>
+        ${memberOptions}
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">نوع المحتوى <span class="req">*</span></label>
+        <select id="aType" class="form-control">
+          <option value="">-- اختر نوع المحتوى --</option>
+          ${D.knowledgeBase.contentTypes.map(ct=>`<option value="${ct.id}">${esc(ct.name)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">النص المراد تحليله <span class="req">*</span></label>
+      <textarea id="aText" class="form-control" rows="9" placeholder="الصق النص هنا (50 حرف على الأقل)..." oninput="updateCharCount()" style="min-height:180px"></textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+        <div class="char-count" id="charCount">0 حرف</div>
+        <div class="file-upload-area" style="padding:6px 12px;border-radius:var(--radius-sm);display:inline-flex;align-items:center;gap:6px;font-size:12px;cursor:pointer" onclick="document.getElementById('fileIn').click()">
+          <input type="file" id="fileIn" accept=".txt,.docx" onchange="handleFile(event)">
+          استيراد ملف (.txt / .docx)
+        </div>
+      </div>
+    </div>
+    <div id="emptyGuideWarn" class="alert alert-warning hidden">
+      <span>&#9888;</span>
+      <span>الدليل الإرشادي فارغ — التحليل سيعتمد على المعايير العامة فقط. لتحليل أدق، أضف الدليل الإرشادي من قاعدة المعرفة.</span>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button id="analyzeBtn" class="btn btn-primary btn-lg" onclick="doAnalyze()" disabled>تحليل النص</button>
+      <span class="text-sm text-muted">الحد الأدنى: 50 حرفاً</span>
+    </div>
+  </div>
+  <div id="loadingBlock" class="hidden">
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <div class="loading-msg" id="loadingMsg">جارٍ قراءة النصّ...</div>
+      <div class="loading-sub">جارٍ تحليل النصّ... قد يستغرق هذا بضع ثوانٍ</div>
+    </div>
+  </div>
+  <div id="resultBlock" class="hidden"></div>`;
+
+  // Auto-select member for member role
+  if(!isManager){
+    // member already set
+  }
+  checkGuideWarn();
+}
+
+function updateCharCount(){
+  const t=document.getElementById('aText');
+  const n=t.value.length;
+  document.getElementById('charCount').textContent=n+' حرف';
+  document.getElementById('analyzeBtn').disabled=n<50;
+}
+
+function checkGuideWarn(){
+  const w=document.getElementById('emptyGuideWarn');
+  if(w)w.classList.toggle('hidden',!!D.knowledgeBase.styleGuide);
+}
+
+function handleFile(e){
+  const f=e.target.files[0];if(!f)return;
+  const name=f.name.toLowerCase();
+  if(name.endsWith('.txt')){
+    const reader=new FileReader();
+    reader.onload=ev=>{document.getElementById('aText').value=ev.target.result;updateCharCount();};
+    reader.readAsText(f,'UTF-8');
+  }else if(name.endsWith('.docx')){
+    // Basic docx: extract raw text from XML
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const arr=new Uint8Array(ev.target.result);
+        // Try to decode as text and extract readable Arabic text
+        let text='';
+        // Use JSZip-free approach: look for w:t tags in the binary
+        const str=new TextDecoder('utf-8',{fatal:false}).decode(arr);
+        const matches=str.match(/<w:t[^>]*>([^<]+)<\/w:t>/g)||[];
+        matches.forEach(m=>{const v=m.replace(/<[^>]+>/g,'');if(v.trim())text+=v+' ';});
+        if(text.trim()){document.getElementById('aText').value=text.trim();updateCharCount();}
+        else{toast('تعذّر استخراج النص من ملف .docx. حاول نسخ النص يدوياً.','warning');}
+      }catch(err){toast('خطأ في قراءة الملف.','danger');}
+    };
+    reader.readAsArrayBuffer(f);
+  }else{toast('صيغة الملف غير مدعومة. استخدم .txt أو .docx','warning');}
+}
+
+// ═══════════════════════ CLAUDE API ═══════════════════════
+const LOAD_MSGS=['جارٍ قراءة النصّ...','جارٍ تطبيق معايير الجودة...','جارٍ صياغة الاقتراحات...','جارٍ إعداد النسخة المحسَّنة...'];
+let loadInterval=null;
+
+function startLoading(){
+  let i=0;
+  document.getElementById('loadingMsg').textContent=LOAD_MSGS[0];
+  loadInterval=setInterval(()=>{i=(i+1)%LOAD_MSGS.length;document.getElementById('loadingMsg').textContent=LOAD_MSGS[i];},2200);
+}
+function stopLoading(){if(loadInterval){clearInterval(loadInterval);loadInterval=null;}}
+
+async function doAnalyze(){
+  const isManager=S.role==='manager';
+  const memberId=isManager?document.getElementById('aMember').value:S.member.id;
+  const memberName=isManager?(D.members.find(m=>m.id===memberId)||{name:''}).name:S.member.name;
+  const ctId=document.getElementById('aType').value;
+  const text=document.getElementById('aText').value.trim();
+  if(!memberId){toast('يرجى اختيار العضو','warning');return;}
+  if(!ctId){toast('يرجى اختيار نوع المحتوى','warning');return;}
+  if(text.length<50){toast('النص أقصر من الحد الأدنى (50 حرفاً)','warning');return;}
+  if(!D.settings.apiKey){
+    showModal('مفتاح API مفقود','<p>لم يُضَف مفتاح Claude API بعد. يرجى إضافته من صفحة الإعدادات.</p>',[
+      {label:'الإعدادات',cls:'btn-primary',fn:()=>{closeModal();if(S.role==='manager')navTo('settings');}},
+      {label:'إلغاء',cls:'btn-ghost',fn:closeModal}
+    ]);return;
+  }
+  // Build prompt
+  const ct=D.knowledgeBase.contentTypes.find(x=>x.id===ctId)||{name:'',specificGuidelines:'',examples:[]};
+  const ctExamples=ct.examples.map((ex,i)=>`مثال ${i+1}:\nنص ضعيف: ${ex.weakText}\nنص محسَّن: ${ex.improvedText}\nالتفسير: ${ex.explanation}`).join('\n\n')||'لا توجد أمثلة بعد';
+  const genExamples=D.knowledgeBase.generalExamples.map((ex,i)=>`مثال ${i+1}:\nنص ضعيف: ${ex.weakText}\nنص محسَّن: ${ex.improvedText}\nالتفسير: ${ex.explanation}`).join('\n\n')||'لا توجد أمثلة بعد';
+  const userPrompt=`الدليل الإرشادي المؤسسي:\n${D.knowledgeBase.styleGuide||'لم يُضَف بعد'}\n\nإرشادات نوع المحتوى (${ct.name}):\n${ct.specificGuidelines||'لا توجد إرشادات خاصة بعد'}\n\nأمثلة تعليمية لهذا النوع:\n${ctExamples}\n\nأمثلة تعليمية عامة:\n${genExamples}\n\nمعايير التقييم السبعة (مرتبة حسب الأهمية):\n1. وضوح الفكرة والمقصد (20%)\n2. البنية والترتيب المنطقي (18%)\n3. سلامة اللغة وفصاحة التركيب (15%)\n4. الدقة في المضمون (15%)\n5. الانضباط الاصطلاحي والبروتوكولي (12%)\n6. ملاءمة النبرة المؤسسية (12%)\n7. الإيجاز والاقتصاد اللغوي (8%)\n\nالنص المراد تحليله:\n${text}\n\nحلّل هذا النص وأعد ردك بهذا الهيكل JSON فقط:\n{"overallScore":number,"overallSummary":"string","weaknesses":[{"title":"string","criterion":"string","quote":"string","explanation":"string","severity":"حرج|متوسط|طفيف"}],"improvedText":"string","improvementNotes":"string","strengths":"string","remainingIssues":"string"}`;
+
+  // Show loading
+  document.getElementById('loadingBlock').classList.remove('hidden');
+  document.getElementById('resultBlock').classList.add('hidden');
+  document.getElementById('analyzeBtn').disabled=true;
+  startLoading();
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':D.settings.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:4000,
+        system:'أنت محرر لغوي متخصص في تحليل النصوص المؤسسية العربية وتحسينها.\nمهمتك تحليل النصوص بدقة وموضوعية تامة بناءً على الدليل الإرشادي المؤسسي المقدَّم إليك.\nأسلوبك في الفيدباك: مباشر، محدد، بنّاء — لا مجاملة ولا قسوة مفرطة.\nتستند في كل ملاحظة إلى نص محدد من النص الأصلي، لا إلى انطباعات عامة.\nتكتب بالعربية الفصحى الرصينة.\nلا تستخدم الإيموجي.\nردك يجب أن يكون JSON فقط بالهيكل المحدد، بلا أي نص خارج JSON.',
+        messages:[{role:'user',content:userPrompt}]
+      })
+    });
+    stopLoading();
+    if(!res.ok){const e=await res.json();throw new Error(e.error?.message||`خطأ ${res.status}`);}
+    const data=await res.json();
+    let raw=data.content[0].text.trim();
+    // Strip markdown code blocks if present
+    raw=raw.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'');
+    const result=JSON.parse(raw);
+    // ── تحقق من الاقتباسات: هل توجد فعلاً في النص الأصلي؟
+    if(result.weaknesses&&result.weaknesses.length){
+      result.weaknesses=result.weaknesses.map(w=>{
+        if(!w.quote||w.quote.trim()==='')return w;
+        // تحقق تقريبي: ابحث عن 60% من كلمات الاقتباس في النص
+        const quoteWords=w.quote.trim().split(/\s+/).filter(x=>x.length>2);
+        const matchCount=quoteWords.filter(word=>text.includes(word)).length;
+        const matchRatio=quoteWords.length>0?matchCount/quoteWords.length:0;
+        if(matchRatio<0.6){
+          // الاقتباس غير موثوق — نضع تحذيراً بدلاً من حذفه
+          w._quoteUnverified=true;
+        }
+        return w;
+      });
+    }
+    S.analysis={id:uid(),memberId,memberName,contentType:ct.name,originalText:text,analysisResult:result,date:new Date().toISOString(),sentToEvaluator:false};
+    S.saved=false;
+    document.getElementById('loadingBlock').classList.add('hidden');
+    renderResult(document.getElementById('resultBlock'),result,ct.name,memberName);
+    document.getElementById('resultBlock').classList.remove('hidden');
+    document.getElementById('analyzeBtn').disabled=false;
+    // Update print header
+    const ph=document.getElementById('phInfo');if(ph)ph.textContent=`العضو: ${memberName} | النوع: ${ct.name} | التاريخ: ${fd(S.analysis.date)}`;
+  }catch(err){
+    stopLoading();
+    document.getElementById('loadingBlock').classList.add('hidden');
+    document.getElementById('analyzeBtn').disabled=false;
+    showModal('خطأ في التحليل',`<div class="alert alert-danger"><span>خطأ: ${esc(err.message)}</span></div><p class="text-sm text-muted" style="margin-top:10px">تحقق من مفتاح API وصحة الاتصال بالإنترنت.</p>`,[{label:'إغلاق',cls:'btn-ghost',fn:closeModal}]);
+  }
+}
+
+// ═══════════════════════ RENDER RESULT ═══════════════════════
+function renderResult(el,r,ctName,memberName){
+  const sc=r.overallScore||0;
+  const pct=((sc/5)*100).toFixed(0);
+  const isMember=S.role==='member';
+  const rl=readinessLevel(sc);
+
+  // ── بطاقة الملخص: عرض مختلف حسب الدور
+  const summaryCard = isMember ? `
+  <div class="card" style="border-top:3px solid ${rl.color}">
+    <div class="card-header"><h3>أ — ملخص النص</h3></div>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px;padding:16px;background:var(--bg);border-radius:var(--radius);border:1px solid var(--border)">
+      <div style="width:14px;height:60px;border-radius:7px;background:${rl.color};flex-shrink:0"></div>
+      <div>
+        <div style="font-size:19px;font-weight:700;color:${rl.color};margin-bottom:4px">${rl.label}</div>
+        <div class="text-sm text-muted">${rl.desc}</div>
+      </div>
+    </div>
+    <p style="font-family:var(--font-text);font-size:14px;line-height:1.9;color:var(--text-primary)">${esc(r.overallSummary)}</p>
+  </div>` : `
+  <div class="card" style="border-top:3px solid ${scoreColor(sc)}">
+    <div class="card-header">
+      <h3>أ — ملخص التقييم</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="badge ${rl.cls}">${rl.label}</span>
+        <span class="badge badge-muted" style="font-size:13px;padding:4px 10px">${sc.toFixed(1)}/5</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">
+      <div class="score-circle ${scoreClass(sc)}">
+        <span class="sn">${sc.toFixed(1)}</span>
+        <span class="sd">من 5</span>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:17px;font-weight:700;color:${scoreColor(sc)};margin-bottom:6px">${scoreLabel(sc)} — ${rl.label}</div>
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:${pct}%;background:${scoreColor(sc)}"></div></div>
+        <div class="text-sm text-muted" style="margin-top:4px">${pct}% من الدرجة الكاملة</div>
+      </div>
+    </div>
+    <p style="font-family:var(--font-text);font-size:14px;line-height:1.9;color:var(--text-primary)">${esc(r.overallSummary)}</p>
+  </div>`;
+
+  el.innerHTML=`
+  <hr class="divider">
+  ${summaryCard}
+
+  <div class="card">
+    <div class="card-header"><h3>${isMember?'ب — جوانب يمكن تطويرها':'ب — الملاحظات التحريرية'}</h3><span class="badge badge-muted">${(r.weaknesses||[]).length} ملاحظة</span></div>
+    ${isMember?`<p class="text-sm text-muted" style="margin-bottom:12px">فيما يلي جوانب يمكن تطويرها في هذا النص:</p>`:''}
+    ${(r.weaknesses||[]).length===0?`<div class="alert alert-success"><span>لم تُرصد ملاحظات جوهرية — النص في مستوى جيد.</span></div>`
+    :(r.weaknesses||[]).map(w=>`
+      <div class="weakness-item sev-${esc(w.severity)}">
+        <div class="weakness-header">
+          <div>
+            <div class="weakness-title">${esc(w.title)}</div>
+            <div class="text-sm text-muted">${esc(w.criterion)}</div>
+          </div>
+          ${isMember ? '' : sevBadge(w.severity)}
+        </div>
+        ${w.quote ? `<div class="weakness-quote">"${esc(w.quote)}"${w._quoteUnverified&&!isMember?` <span class="badge badge-muted" style="font-size:10px;margin-right:6px">اقتباس تقريبي</span>`:''}</div>` : ''}
+        <div class="weakness-expl">${esc(w.explanation)}</div>
+      </div>`).join('')}
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>ج — النص المقترح</h3></div>
+    <div class="improved-text-box">${esc(r.improvedText)}</div>
+    ${r.improvementNotes?`<div class="alert alert-info" style="margin-top:12px"><span>&#9432;</span><span><strong>أبرز التغييرات:</strong> ${esc(r.improvementNotes)}</span></div>`:''}
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>د — ما أُحسن وما لا يزال يحتاج عملاً</h3></div>
+    ${r.strengths?`<div style="margin-bottom:14px"><div class="text-sm" style="font-weight:700;color:var(--success);margin-bottom:6px">ما كان قوياً في النص الأصلي:</div><p style="font-size:14px;line-height:1.8;color:var(--text-primary)">${esc(r.strengths)}</p></div>`:''}
+    ${r.remainingIssues?`<div><div class="text-sm" style="font-weight:700;color:var(--warning);margin-bottom:6px">ما لا يزال يحتاج إلى عمل إضافي:</div><p style="font-size:14px;line-height:1.8;color:var(--text-primary)">${esc(r.remainingIssues)}</p></div>`:''}
+  </div>
+
+  <div class="card no-print" style="background:var(--bg)">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-success" onclick="saveAnalysis()">حفظ التحليل</button>
+      ${S.role==='manager'?`<button class="btn btn-accent" onclick="sendToEvaluator()">إرسال إلى سجل التقييم</button>`:''}
+      <button class="btn btn-outline" onclick="window.print()">طباعة / تصدير</button>
+      <button class="btn btn-ghost" onclick="newAnalysis()">تحليل نص جديد</button>
+      <span id="savedBadge" class="badge badge-success hidden">تم الحفظ</span>
+    </div>
+  </div>`;
+}
+
+function saveAnalysis(){
+  if(!S.analysis)return;
+  if(S.saved){toast('التحليل محفوظ مسبقاً','info');return;}
+  D.analyses.push(S.analysis);save();S.saved=true;
+  document.getElementById('savedBadge').classList.remove('hidden');
+  toast('تم حفظ التحليل في السجل','success');
+}
+
+function newAnalysis(){
+  if(S.analysis&&!S.saved){if(!confirm('لم تحفظ نتيجة التحليل. هل تريد البدء من جديد؟'))return;}
+  S.analysis=null;S.saved=false;
+  const main=S.role==='manager'?document.getElementById('managerMain'):document.getElementById('memberMain');
+  renderAnalysis(main);
+}
+
+function sendToEvaluator(){
+  if(!S.analysis)return;
+  const a=S.analysis;const r=a.analysisResult;
+  const weakList=(r.weaknesses||[]).map(w=>`- ${w.title} (${w.severity})`).join('\n');
+  const preview=a.originalText.slice(0,50)+(a.originalText.length>50?'...':'');
+  showModal('إرسال إلى سجل التقييم',`
+    <p style="margin-bottom:12px">هل تريد إرسال نتيجة هذا التحليل إلى أداة تقييم الفريق؟</p>
+    <div class="alert alert-info">
+      <div>
+        <div style="margin-bottom:4px"><strong>العضو:</strong> ${esc(a.memberName)}</div>
+        <div style="margin-bottom:4px"><strong>الدرجة:</strong> ${r.overallScore}/5 — ${scoreLabel(r.overallScore)}</div>
+        <div><strong>النص:</strong> ${esc(preview)}</div>
+      </div>
+    </div>
+    <p class="text-sm text-muted">سيُفتح رابط أداة التقييم في نافذة جديدة، وسيُنسخ ملخص التحليل إلى الحافظة.</p>`,
+  [{label:'تأكيد الإرسال',cls:'btn-accent',fn:()=>{
+    const summary=`نتيجة تحليل آلي — ${fd(a.date)}\nالعضو: ${a.memberName}\nنوع المحتوى: ${a.contentType}\nالدرجة: ${r.overallScore}/5 — ${scoreLabel(r.overallScore)}\nأبرز نقاط الضعف:\n${weakList}\nالدليل الموثَّق: تحليل آلي عبر أداة تحسين النصوص`;
+    navigator.clipboard.writeText(summary).catch(()=>{});
+    window.open(D.settings.evaluatorToolUrl||'https://qais1983.github.io/team-evaluator/','_blank');
+    if(!S.saved){D.analyses.push(a);save();S.saved=true;}
+    const idx=D.analyses.findIndex(x=>x.id===a.id);if(idx>-1){D.analyses[idx].sentToEvaluator=true;save();}
+    closeModal();
+    toast('تم نسخ ملخص التحليل. يمكنك لصقه في حقل الدليل الموثَّق في أداة التقييم.','success',5000);
+  }},{label:'إلغاء',cls:'btn-ghost',fn:closeModal}]);
+}
+
+// ═══════════════════════ HISTORY SCREEN ═══════════════════════
+function renderHistory(main){
+  const isManager=S.role==='manager';
+  let analyses=isManager?[...D.analyses]:D.analyses.filter(a=>a.memberId===S.member.id);
+  analyses=analyses.sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+  const f=S.histFilters;
+  let filtered=analyses;
+  if(f.member)filtered=filtered.filter(a=>a.memberId===f.member);
+  if(f.type)filtered=filtered.filter(a=>a.contentType===f.type);
+  if(f.scoreMin!=='')filtered=filtered.filter(a=>(a.analysisResult?.overallScore||0)>=parseFloat(f.scoreMin));
+  if(f.scoreMax!=='')filtered=filtered.filter(a=>(a.analysisResult?.overallScore||0)<=parseFloat(f.scoreMax));
+  if(f.dateFrom)filtered=filtered.filter(a=>a.date>=f.dateFrom);
+  if(f.dateTo)filtered=filtered.filter(a=>a.date<=f.dateTo+'T23:59:59');
+
+  main.innerHTML=`
+  <div class="page-header"><div><h2>سجل التحليلات</h2><p>${isManager?'جميع تحليلات الفريق':'تحليلاتك الشخصية'} — ${filtered.length} تحليل</p></div></div>
+  ${isManager?`
+  <div class="filters-row">
+    <div class="form-group"><label class="form-label">العضو</label>
+      <select class="form-control" onchange="S.histFilters.member=this.value;renderHistory(document.getElementById('${isManager?'managerMain':'memberMain'}'))">
+        <option value="">الكل</option>
+        ${D.members.map(m=>`<option value="${m.id}" ${f.member===m.id?'selected':''}>${esc(m.name)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">نوع المحتوى</label>
+      <select class="form-control" onchange="S.histFilters.type=this.value;renderHistory(document.getElementById('managerMain'))">
+        <option value="">الكل</option>
+        ${D.knowledgeBase.contentTypes.map(ct=>`<option value="${ct.name}" ${f.type===ct.name?'selected':''}>${esc(ct.name)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">الدرجة من</label>
+      <input type="number" class="form-control" min="1" max="5" step="0.1" placeholder="1" value="${f.scoreMin}" onchange="S.histFilters.scoreMin=this.value;renderHistory(document.getElementById('managerMain'))">
+    </div>
+    <div class="form-group"><label class="form-label">إلى</label>
+      <input type="number" class="form-control" min="1" max="5" step="0.1" placeholder="5" value="${f.scoreMax}" onchange="S.histFilters.scoreMax=this.value;renderHistory(document.getElementById('managerMain'))">
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="S.histFilters={member:'',type:'',scoreMin:'',scoreMax:'',dateFrom:'',dateTo:''};renderHistory(document.getElementById('managerMain'))">مسح الفلاتر</button>
+  </div>`:''}
+  <div id="histList">
+  ${filtered.length===0?`<div class="empty-state"><div style="font-size:42px;opacity:.3">&#9776;</div><h3>لا توجد تحليلات بعد</h3><p>${isManager?'ابدأ بتحليل نص من شاشة "تحليل نص جديد"':'لم تُجرِ أي تحليل بعد'}</p></div>`
+  :filtered.map(a=>{
+    const r=a.analysisResult||{};const sc=r.overallScore||0;
+    return`<div class="history-item" id="hi-${a.id}">
+      <div class="history-item-header">
+        <span class="badge ${sc>=4.2?'badge-success':sc>=3.5?'badge-primary':sc>=2.8?'badge-warning':'badge-danger'}" style="font-size:13px;padding:4px 12px">${sc.toFixed(1)}/5</span>
+        ${isManager?`<span class="badge badge-muted">${esc(a.memberName)}</span>`:''}
+        <span class="badge badge-primary">${esc(a.contentType)}</span>
+        <span class="history-item-meta">${fd(a.date)}</span>
+        ${a.sentToEvaluator?`<span class="badge badge-accent">أُرسل للتقييم</span>`:''}
+      </div>
+      <div class="history-item-text">${esc(a.originalText.slice(0,120))}${a.originalText.length>120?'...':''}</div>
+      <div class="history-item-actions">
+        <button class="btn btn-outline btn-sm" onclick="toggleHistDetail('${a.id}')">عرض التفاصيل</button>
+        <button class="btn btn-ghost btn-sm" onclick="reAnalyze('${a.id}')">إعادة التحليل</button>
+        ${isManager?`<button class="btn btn-outline-danger btn-sm" onclick="deleteAnalysis('${a.id}')">حذف</button>`:''}
+      </div>
+      <div class="history-detail" id="hd-${a.id}">
+        ${r.overallSummary?`<div style="margin-bottom:12px"><strong>الملخص:</strong> <span style="font-size:13px;color:var(--text-secondary)">${esc(r.overallSummary)}</span></div>`:''}
+        ${(r.weaknesses||[]).length?`<div style="margin-bottom:12px"><strong>نقاط الضعف (${r.weaknesses.length}):</strong>${r.weaknesses.map(w=>`<div class="weakness-item sev-${esc(w.severity)}" style="margin-top:8px"><div class="weakness-header"><span class="weakness-title">${esc(w.title)}</span>${sevBadge(w.severity)}</div>${w.quote?`<div class="weakness-quote">"${esc(w.quote)}"</div>`:''}<div class="weakness-expl">${esc(w.explanation)}</div></div>`).join('')}</div>`:''}
+        ${r.improvedText?`<div><strong>النص المقترح:</strong><div class="improved-text-box" style="margin-top:8px;font-size:13px">${esc(r.improvedText)}</div></div>`:''}
+        ${r.strengths?`<div style="margin-top:10px"><strong style="color:var(--success)">نقاط القوة:</strong> <span class="text-sm text-muted">${esc(r.strengths)}</span></div>`:''}
+      </div>
+    </div>`;
+  }).join('')}
+  </div>`;
+}
+
+function toggleHistDetail(id){
+  const d=document.getElementById('hd-'+id);
+  if(d){d.classList.toggle('open');const btn=d.previousElementSibling.querySelector('.btn-outline');if(btn)btn.textContent=d.classList.contains('open')?'إخفاء التفاصيل':'عرض التفاصيل';}
+}
+
+function deleteAnalysis(id){
+  showModal('حذف التحليل','<p>هل أنت متأكد من حذف هذا التحليل؟ لا يمكن التراجع عن هذا الإجراء.</p>',[
+    {label:'حذف',cls:'btn-danger',fn:()=>{D.analyses=D.analyses.filter(a=>a.id!==id);save();closeModal();renderHistory(document.getElementById('managerMain'));toast('تم حذف التحليل','success');}},
+    {label:'إلغاء',cls:'btn-ghost',fn:closeModal}
+  ]);
+}
+
+function reAnalyze(id){
+  const a=D.analyses.find(x=>x.id===id);if(!a)return;
+  const main=S.role==='manager'?document.getElementById('managerMain'):document.getElementById('memberMain');
+  if(S.role==='manager')navTo('analysis');else memberNav('analysis');
+  setTimeout(()=>{
+    const ta=document.getElementById('aText');if(ta){ta.value=a.originalText;updateCharCount();}
+    const ts=document.getElementById('aType');if(ts){const ct=D.knowledgeBase.contentTypes.find(c=>c.name===a.contentType);if(ct)ts.value=ct.id;}
+    if(S.role==='manager'){const ms=document.getElementById('aMember');if(ms)ms.value=a.memberId;}
+  },100);
+}
+
+// ═══════════════════════ KNOWLEDGE BASE ═══════════════════════
+function renderKnowledge(main){
+  main.innerHTML=`
+  <div class="page-header"><div><h2>قاعدة المعرفة</h2><p>مرجع التحليل الآلي — كلما كان الدليل أكثر تفصيلاً، كان التحليل أدق</p></div></div>
+  <div class="tabs">
+    <button class="tab-btn ${S.kbTab==='guide'?'active':''}" onclick="switchKbTab('guide')">الدليل الإرشادي</button>
+    <button class="tab-btn ${S.kbTab==='types'?'active':''}" onclick="switchKbTab('types')">أنواع المحتوى</button>
+    <button class="tab-btn ${S.kbTab==='general'?'active':''}" onclick="switchKbTab('general')">أمثلة عامة</button>
+  </div>
+  <div id="kbTabContent"></div>`;
+  renderKbTab();
+}
+
+function switchKbTab(t){S.kbTab=t;document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()===({guide:'الدليل الإرشادي',types:'أنواع المحتوى',general:'أمثلة عامة'}[t])));renderKbTab();}
+
+function renderKbTab(){
+  const c=document.getElementById('kbTabContent');if(!c)return;
+  if(S.kbTab==='guide')renderKbGuide(c);
+  else if(S.kbTab==='types')renderKbTypes(c);
+  else if(S.kbTab==='general')renderKbGeneral(c);
+}
+
+function renderKbGuide(c){
+  const upd=D.knowledgeBase.styleGuideUpdated;
+  c.innerHTML=`
+  <div class="section-block">
+    <h3>الدليل الإرشادي المؤسسي</h3>
+    <div class="alert alert-info"><span>&#9432;</span><span>هذا النص يُحقن في كل طلب تحليل كمرجع رئيسي. كلما كان أكثر تفصيلاً، كانت نتائج التحليل أدق.</span></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+      <label class="form-label" style="margin-bottom:0">محتوى الدليل الإرشادي</label>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="text-sm text-muted">استيراد من ملف:</span>
+        <label class="btn btn-outline btn-sm" style="cursor:pointer;margin-bottom:0">
+          رفع ملف .txt
+          <input type="file" accept=".txt" class="hidden" onchange="loadGuideFile(event,'txt')">
+        </label>
+        <label class="btn btn-outline btn-sm" style="cursor:pointer;margin-bottom:0">
+          رفع ملف .docx
+          <input type="file" accept=".docx" class="hidden" onchange="loadGuideFile(event,'docx')">
+        </label>
+      </div>
+    </div>
+    <div id="guideFileStatus"></div>
+    <div class="form-group">
+      <textarea id="kbGuideText" class="form-control" rows="18" placeholder="الصق الدليل الإرشادي هنا، أو ارفع ملفاً أعلاه..." oninput="document.getElementById('guideCharCount').textContent=this.value.length+' حرف'" style="min-height:360px;font-size:13px;line-height:1.9">${esc(D.knowledgeBase.styleGuide)}</textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+        <div class="char-count" id="guideCharCount">${D.knowledgeBase.styleGuide.length} حرف</div>
+        ${upd?`<div class="text-sm text-muted">آخر تحديث: ${fdt(upd)}</div>`:''}
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="saveGuide()">حفظ الدليل</button>
+      <button class="btn btn-ghost btn-sm" onclick="if(confirm('هل تريد مسح محتوى الدليل؟')){document.getElementById('kbGuideText').value='';document.getElementById('guideCharCount').textContent='0 حرف';}">مسح المحتوى</button>
+    </div>
+  </div>`;
+}
+
+function loadGuideFile(e, type) {
+  const f = e.target.files[0]; if (!f) return;
+  const status = document.getElementById('guideFileStatus');
+  status.innerHTML = `<div class="alert alert-info"><span>&#9432;</span><span>جارٍ قراءة الملف: ${esc(f.name)}...</span></div>`;
+  if (type === 'txt') {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const text = ev.target.result;
+      document.getElementById('kbGuideText').value = text;
+      document.getElementById('guideCharCount').textContent = text.length + ' حرف';
+      status.innerHTML = `<div class="alert alert-success"><span>&#10003;</span><span>تم استيراد الملف بنجاح — ${text.length} حرف. راجع المحتوى ثم اضغط "حفظ الدليل".</span></div>`;
+    };
+    reader.onerror = () => { status.innerHTML = `<div class="alert alert-danger"><span>فشل قراءة الملف</span></div>`; };
+    reader.readAsText(f, 'UTF-8');
+  } else if (type === 'docx') {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const arr = new Uint8Array(ev.target.result);
+        const str = new TextDecoder('utf-8', {fatal: false}).decode(arr);
+        // Extract text from w:t tags and preserve paragraph breaks from w:p
+        let text = '';
+        const parasRaw = str.split(/<w:p[ >]/);
+        parasRaw.forEach(para => {
+          const matches = para.match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || [];
+          const line = matches.map(m => m.replace(/<[^>]+>/g, '')).join('').trim();
+          if (line) text += line + '\n';
+        });
+        text = text.trim();
+        if (text.length > 30) {
+          document.getElementById('kbGuideText').value = text;
+          document.getElementById('guideCharCount').textContent = text.length + ' حرف';
+          status.innerHTML = `<div class="alert alert-success"><span>&#10003;</span><span>تم استيراد الملف بنجاح — ${text.length} حرف. راجع المحتوى ثم اضغط "حفظ الدليل".</span></div>`;
+        } else {
+          status.innerHTML = `<div class="alert alert-warning"><span>&#9888;</span><span>تعذّر استخراج نص كافٍ من الملف. جرّب حفظه بصيغة .txt أولاً من Word ثم ارفعه.</span></div>`;
+        }
+      } catch (err) {
+        status.innerHTML = `<div class="alert alert-danger"><span>خطأ في قراءة الملف: ${esc(err.message)}</span></div>`;
+      }
+    };
+    reader.onerror = () => { status.innerHTML = `<div class="alert alert-danger"><span>فشل قراءة الملف</span></div>`; };
+    reader.readAsArrayBuffer(f);
+  }
+  e.target.value = '';
+}
+
+function saveGuide(){
+  const t=document.getElementById('kbGuideText');if(!t)return;
+  D.knowledgeBase.styleGuide=t.value;D.knowledgeBase.styleGuideUpdated=new Date().toISOString();save();
+  const s=document.getElementById('guideFileStatus');if(s)s.innerHTML='';
+  toast('تم حفظ الدليل الإرشادي','success');
+}
+
+function renderKbTypes(c){
+  const ct=D.knowledgeBase.contentTypes.find(x=>x.id===S.kbCtId)||D.knowledgeBase.contentTypes[0];
+  if(ct)S.kbCtId=ct.id;
+  c.innerHTML=`
+  <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+    ${D.knowledgeBase.contentTypes.map(t=>`<button class="btn ${t.id===S.kbCtId?'btn-primary':'btn-ghost'} btn-sm" onclick="S.kbCtId='${t.id}';renderKbTypes(document.getElementById('kbTabContent'))">${esc(t.name)}</button>`).join('')}
+  </div>
+  ${ct?`
+  <div class="section-block">
+    <h3>${esc(ct.name)}</h3>
+    <div class="grid-2" style="margin-bottom:14px">
+      <div class="form-group">
+        <label class="form-label">وصف النوع</label>
+        <textarea id="ctDesc" class="form-control" rows="3" placeholder="وصف مختصر لهذا النوع من المحتوى...">${esc(ct.description)}</textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">الإرشادات الخاصة</label>
+        <textarea id="ctGuide" class="form-control" rows="3" placeholder="الإرشادات والمعايير الخاصة بهذا النوع...">${esc(ct.specificGuidelines)}</textarea>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="saveCtInfo()">حفظ المعلومات</button>
+    <hr class="divider">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <h4 style="margin-bottom:0">الأمثلة التعليمية (${ct.examples.length})</h4>
+      <button class="btn btn-outline btn-sm" onclick="addExample('ct','${ct.id}')">إضافة مثال</button>
+    </div>
+    ${ct.examples.length===0?`<div class="alert alert-info"><span>&#9432;</span><span>لا توجد أمثلة بعد. الأمثلة تساعد الذكاء الاصطناعي على فهم المستوى المطلوب.</span></div>`
+    :ct.examples.map(ex=>`
+      <div class="kb-example">
+        <div class="kb-eg-grid">
+          <div class="kb-eg-col"><label>نص ضعيف</label><p>${esc(ex.weakText)}</p></div>
+          <div class="kb-eg-col"><label>نص محسَّن</label><p>${esc(ex.improvedText)}</p></div>
+        </div>
+        ${ex.explanation?`<div class="kb-eg-expl"><strong>التفسير:</strong> ${esc(ex.explanation)}</div>`:''}
+        <div style="margin-top:8px;display:flex;gap:7px">
+          <button class="btn btn-ghost btn-sm" onclick="editExample('ct','${ct.id}','${ex.id}')">تعديل</button>
+          <button class="btn btn-outline-danger btn-sm" onclick="deleteExample('ct','${ct.id}','${ex.id}')">حذف</button>
+        </div>
+      </div>`).join('')}
+  </div>`:''}`;
+}
+
+function saveCtInfo(){
+  const ct=D.knowledgeBase.contentTypes.find(x=>x.id===S.kbCtId);if(!ct)return;
+  ct.description=document.getElementById('ctDesc').value;
+  ct.specificGuidelines=document.getElementById('ctGuide').value;
+  save();toast('تم حفظ معلومات النوع','success');
+}
+
+function renderKbGeneral(c){
+  const exs=D.knowledgeBase.generalExamples;
+  c.innerHTML=`
+  <div class="section-block">
+    <h3>الأمثلة العامة</h3>
+    <div class="alert alert-info"><span>&#9432;</span><span>هذه الأمثلة تُحقن في كل طلب تحليل بصرف النظر عن نوع المحتوى.</span></div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <button class="btn btn-outline btn-sm" onclick="addExample('gen','')">إضافة مثال عام</button>
+    </div>
+    ${exs.length===0?`<div class="alert alert-info"><span>&#9432;</span><span>لا توجد أمثلة عامة بعد.</span></div>`
+    :exs.map(ex=>`
+      <div class="kb-example">
+        <div class="kb-eg-grid">
+          <div class="kb-eg-col"><label>نص ضعيف</label><p>${esc(ex.weakText)}</p></div>
+          <div class="kb-eg-col"><label>نص محسَّن</label><p>${esc(ex.improvedText)}</p></div>
+        </div>
+        ${ex.explanation?`<div class="kb-eg-expl"><strong>التفسير:</strong> ${esc(ex.explanation)}</div>`:''}
+        <div style="margin-top:8px;display:flex;gap:7px">
+          <button class="btn btn-ghost btn-sm" onclick="editExample('gen','','${ex.id}')">تعديل</button>
+          <button class="btn btn-outline-danger btn-sm" onclick="deleteExample('gen','','${ex.id}')">حذف</button>
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function addExample(scope,ctId){
+  showModal('إضافة مثال تعليمي',`
+    <div class="form-group"><label class="form-label">النص الضعيف <span class="req">*</span></label><textarea id="exWeak" class="form-control" rows="3" placeholder="مثال على نص يحتاج تحسيناً..."></textarea></div>
+    <div class="form-group"><label class="form-label">النص المحسَّن <span class="req">*</span></label><textarea id="exImproved" class="form-control" rows="3" placeholder="النسخة المحسَّنة من النص..."></textarea></div>
+    <div class="form-group"><label class="form-label">التفسير</label><textarea id="exExpl" class="form-control" rows="2" placeholder="اشرح ما الذي جعل النص الأول ضعيفاً وكيف تحسَّن..."></textarea></div>`,
+  [{label:'حفظ',cls:'btn-primary',fn:()=>{
+    const w=document.getElementById('exWeak').value.trim();
+    const imp=document.getElementById('exImproved').value.trim();
+    const expl=document.getElementById('exExpl').value.trim();
+    if(!w||!imp){toast('يرجى إدخال النص الضعيف والمحسَّن','warning');return;}
+    const ex={id:uid(),weakText:w,improvedText:imp,explanation:expl};
+    if(scope==='ct'){const ct=D.knowledgeBase.contentTypes.find(x=>x.id===ctId);if(ct)ct.examples.push(ex);}
+    else D.knowledgeBase.generalExamples.push(ex);
+    save();closeModal();
+    if(scope==='ct')renderKbTypes(document.getElementById('kbTabContent'));
+    else renderKbGeneral(document.getElementById('kbTabContent'));
+    toast('تم إضافة المثال','success');
+  }},{label:'إلغاء',cls:'btn-ghost',fn:closeModal}]);
+}
+
+function editExample(scope,ctId,exId){
+  let arr;
+  if(scope==='ct'){const ct=D.knowledgeBase.contentTypes.find(x=>x.id===ctId);arr=ct?ct.examples:[];}
+  else arr=D.knowledgeBase.generalExamples;
+  const ex=arr.find(x=>x.id===exId);if(!ex)return;
+  showModal('تعديل المثال',`
+    <div class="form-group"><label class="form-label">النص الضعيف</label><textarea id="exWeak" class="form-control" rows="3">${esc(ex.weakText)}</textarea></div>
+    <div class="form-group"><label class="form-label">النص المحسَّن</label><textarea id="exImproved" class="form-control" rows="3">${esc(ex.improvedText)}</textarea></div>
+    <div class="form-group"><label class="form-label">التفسير</label><textarea id="exExpl" class="form-control" rows="2">${esc(ex.explanation)}</textarea></div>`,
+  [{label:'حفظ',cls:'btn-primary',fn:()=>{
+    ex.weakText=document.getElementById('exWeak').value.trim();
+    ex.improvedText=document.getElementById('exImproved').value.trim();
+    ex.explanation=document.getElementById('exExpl').value.trim();
+    save();closeModal();
+    if(scope==='ct')renderKbTypes(document.getElementById('kbTabContent'));
+    else renderKbGeneral(document.getElementById('kbTabContent'));
+    toast('تم تحديث المثال','success');
+  }},{label:'إلغاء',cls:'btn-ghost',fn:closeModal}]);
+}
+
+function deleteExample(scope,ctId,exId){
+  showModal('حذف المثال','<p>هل أنت متأكد من حذف هذا المثال؟</p>',[
+    {label:'حذف',cls:'btn-danger',fn:()=>{
+      if(scope==='ct'){const ct=D.knowledgeBase.contentTypes.find(x=>x.id===ctId);if(ct)ct.examples=ct.examples.filter(e=>e.id!==exId);}
+      else D.knowledgeBase.generalExamples=D.knowledgeBase.generalExamples.filter(e=>e.id!==exId);
+      save();closeModal();
+      if(scope==='ct')renderKbTypes(document.getElementById('kbTabContent'));
+      else renderKbGeneral(document.getElementById('kbTabContent'));
+      toast('تم حذف المثال','success');
+    }},{label:'إلغاء',cls:'btn-ghost',fn:closeModal}]);
+}
+
+// ═══════════════════════ MANAGER DASHBOARD ═══════════════════════
+function renderDashboard(main){
+  const now=new Date();
+  const weekAgo=new Date(now.getTime()-7*24*60*60*1000);
+  const weekAnalyses=D.analyses.filter(a=>new Date(a.date)>=weekAgo);
+  const totalAnalyses=D.analyses.length;
+  const avgScore=totalAnalyses?(D.analyses.reduce((s,a)=>s+(a.analysisResult?.overallScore||0),0)/totalAnalyses).toFixed(2):0;
+  // Per content type avg
+  const ctStats={};
+  D.knowledgeBase.contentTypes.forEach(ct=>{
+    const cas=D.analyses.filter(a=>a.contentType===ct.name);
+    ctStats[ct.name]={count:cas.length,avg:cas.length?(cas.reduce((s,a)=>s+(a.analysisResult?.overallScore||0),0)/cas.length).toFixed(1):'-'};
+  });
+  // Members with no submission this week
+  const weekMembers=new Set(weekAnalyses.map(a=>a.memberId));
+  const inactiveMembers=D.members.filter(m=>!weekMembers.has(m.id));
+  // Member activity
+  const memberActivity={};
+  weekAnalyses.forEach(a=>{memberActivity[a.memberId]=(memberActivity[a.memberId]||0)+1;});
+  const topMembers=Object.entries(memberActivity).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const recent=D.analyses.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10);
+
+  main.innerHTML=`
+  <div class="page-header"><div><h2>لوحة المدير</h2><p>نظرة عامة على أداء الفريق وآخر النشاطات</p></div>
+  <button class="btn btn-outline btn-sm no-print" onclick="navTo('knowledge')">قاعدة المعرفة</button></div>
+
+  <div class="stats-grid">
+    <div class="stat-card"><div class="sv">${totalAnalyses}</div><div class="sl">إجمالي التحليلات</div></div>
+    <div class="stat-card"><div class="sv">${weekAnalyses.length}</div><div class="sl">تحليلات هذا الأسبوع</div></div>
+    <div class="stat-card"><div class="sv" style="color:${scoreColor(parseFloat(avgScore))}">${avgScore}</div><div class="sl">متوسط الدرجات</div></div>
+    <div class="stat-card"><div class="sv">${D.members.length}</div><div class="sl">أعضاء الفريق</div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><h3>متوسط الدرجات حسب نوع المحتوى</h3></div>
+      ${Object.entries(ctStats).map(([name,st])=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:13px;font-weight:600">${esc(name)}</div><div class="text-sm text-muted">${st.count} تحليل</div></div>
+          <span class="badge ${st.avg==='-'?'badge-muted':parseFloat(st.avg)>=4.2?'badge-success':parseFloat(st.avg)>=3.5?'badge-primary':parseFloat(st.avg)>=2.8?'badge-warning':'badge-danger'}">${st.avg}/5</span>
+        </div>`).join('')}
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>أكثر الأعضاء نشاطاً هذا الأسبوع</h3></div>
+      ${topMembers.length===0?`<div class="alert alert-info"><span>&#9432;</span><span>لا توجد تحليلات هذا الأسبوع بعد.</span></div>`
+      :topMembers.map(([mid,cnt])=>{const m=D.members.find(x=>x.id===mid);return`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:600">${esc(m?m.name:mid)}</div>
+          <span class="badge badge-primary">${cnt} تحليل</span>
+        </div>`;}).join('')}
+      ${inactiveMembers.length?`<div style="margin-top:12px"><div class="text-sm" style="font-weight:700;color:var(--warning);margin-bottom:6px">لم يُقدِّموا هذا الأسبوع:</div>${inactiveMembers.map(m=>`<span class="badge badge-muted" style="margin-left:5px;margin-bottom:5px">${esc(m.name)}</span>`).join('')}</div>`:''}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>آخر التحليلات</h3><button class="btn btn-ghost btn-sm" onclick="navTo('history')">عرض الكل</button></div>
+    ${recent.length===0?`<div class="empty-state" style="padding:30px"><h3>لا توجد تحليلات بعد</h3></div>`
+    :recent.map(a=>{const sc=a.analysisResult?.overallScore||0;return`
+      <div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap">
+        <span class="badge ${sc>=4.2?'badge-success':sc>=3.5?'badge-primary':sc>=2.8?'badge-warning':'badge-danger'}">${sc.toFixed(1)}</span>
+        <span style="font-size:13px;font-weight:600;flex:1;min-width:100px">${esc(a.memberName)}</span>
+        <span class="badge badge-muted">${esc(a.contentType)}</span>
+        <span class="text-sm text-muted">${fd(a.date)}</span>
+        <button class="btn btn-ghost btn-sm" onclick="navTo('history')">عرض</button>
+      </div>`;}).join('')}
+  </div>`;
+}
+
+// ═══════════════════════ SETTINGS ═══════════════════════
+function renderSettings(main){
+  main.innerHTML=`
+  <div class="page-header"><div><h2>الإعدادات</h2><p>ضبط إعدادات الأداة والفريق</p></div></div>
+
+  <div class="section-block">
+    <h3>أ — أعضاء الفريق</h3>
+    <div id="membersList"></div>
+    <button class="btn btn-outline btn-sm" onclick="addMember()">إضافة عضو</button>
+  </div>
+
+  <div class="section-block">
+    <h3>ب — مفتاح الذكاء الاصطناعي</h3>
+    <div class="alert alert-info"><span>&#9432;</span><span>يُخزَّن المفتاح في المتصفح فقط ولا يُرسَل إلى أي خادم وسيط. يُستخدم مباشرة مع واجهة Anthropic API.</span></div>
+    <div class="form-group">
+      <label class="form-label">مفتاح Claude API</label>
+      <div class="pw-group">
+        <input type="password" id="apiKeyInput" class="form-control" value="${esc(D.settings.apiKey)}" placeholder="sk-ant-...">
+        <button class="pw-toggle" onclick="togglePw('apiKeyInput',this)">&#128065;</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-primary btn-sm" onclick="saveApiKey()">حفظ المفتاح</button>
+      <button class="btn btn-ghost btn-sm" onclick="testApiKey()">اختبار الاتصال</button>
+    </div>
+    <div id="apiTestResult" style="margin-top:10px"></div>
+  </div>
+
+  <div class="section-block">
+    <h3>ج — كلمة مرور المدير</h3>
+    <div class="form-group">
+      <label class="form-label">كلمة مرور جديدة</label>
+      <div class="pw-group">
+        <input type="password" id="pwInput" class="form-control" placeholder="اتركها فارغة للإلغاء">
+        <button class="pw-toggle" onclick="togglePw('pwInput',this)">&#128065;</button>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="savePassword()">حفظ كلمة المرور</button>
+  </div>
+
+  <div class="section-block">
+    <h3>د — رابط أداة التقييم</h3>
+    <div class="form-group">
+      <label class="form-label">رابط أداة تقييم الفريق</label>
+      <input type="url" id="evalUrl" class="form-control" value="${esc(D.settings.evaluatorToolUrl)}" placeholder="https://...">
+      <div class="form-hint">يُستخدم عند الضغط على "إرسال إلى سجل التقييم"</div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="saveEvalUrl()">حفظ الرابط</button>
+  </div>
+
+  <div class="section-block">
+    <h3>هـ — البيانات</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" onclick="exportData()">تصدير البيانات (JSON)</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('importFile').click()">استيراد بيانات</button>
+      <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
+      <button class="btn btn-outline-danger btn-sm" onclick="clearAnalyses()">مسح التحليلات</button>
+      <button class="btn btn-danger btn-sm" onclick="clearAll()">مسح كل شيء</button>
+    </div>
+  </div>`;
+  renderMembersList();
+}
+
+function renderMembersList(){
+  const c=document.getElementById('membersList');if(!c)return;
+  if(D.members.length===0){c.innerHTML=`<div class="alert alert-info" style="margin-bottom:12px"><span>&#9432;</span><span>لا يوجد أعضاء بعد.</span></div>`;return;}
+  c.innerHTML=`<div style="margin-bottom:12px">${D.members.map(m=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+      <span style="flex:1;font-size:13px;font-weight:600">${esc(m.name)}</span>
+      <span class="badge badge-muted">${esc(m.role||'عضو')}</span>
+      <button class="btn btn-ghost btn-sm" onclick="editMember('${m.id}')">تعديل</button>
+      <button class="btn btn-outline-danger btn-sm" onclick="deleteMember('${m.id}')">حذف</button>
+    </div>`).join('')}</div>`;
+}
+
+function addMember(){
+  showModal('إضافة عضو جديد',`
+    <div class="form-group"><label class="form-label">الاسم الكامل <span class="req">*</span></label><input type="text" id="mName" class="form-control" placeholder="اسم العضو"></div>
+    <div class="form-group"><label class="form-label">الدور / المسمى الوظيفي</label><input type="text" id="mRole" class="form-control" placeholder="محرر / مترجم / ..."></div>`,
+  [{label:'إضافة',cls:'btn-primary',fn:()=>{
+    const n=document.getElementById('mName').value.trim();
+    const r=document.getElementById('mRole').value.trim();
+    if(!n){toast('يرجى إدخال الاسم','warning');return;}
+    D.members.push({id:uid(),name:n,role:r||'عضو'});save();
+    closeModal();renderMembersList();toast('تم إضافة العضو','success');
+  }},{label:'إلغاء',cls:'btn-ghost',fn:closeModal}]);
+}
+
+function editMember(id){
+  const m=D.members.find(x=>x.id===id);if(!m)return;
+  showModal('تعديل بيانات العضو',`
+    <div class="form-group"><label class="form-label">الاسم الكامل</label><input type="text" id="mName" class="form-control" value="${esc(m.name)}"></div>
+    <div class="form-group"><label class="form-label">الدور</label><input type="text" id="mRole" class="form-control" value="${esc(m.role)}"></div>`,
+  [{label:'حفظ',cls:'btn-primary',fn:()=>{
+    const n=document.getElementById('mName').value.trim();
+    if(!n){toast('يرجى إدخال الاسم','warning');return;}
+    m.name=n;m.role=document.getElementById('mRole').value.trim()||'عضو';
+    save();closeModal();renderMembersList();toast('تم تحديث بيانات العضو','success');
+  }},{label:'إلغاء',cls:'btn-ghost',fn:closeModal}]);
+}
+
+function deleteMember(id){
+  const m=D.members.find(x=>x.id===id);
+  showModal('حذف العضو',`<p>هل أنت متأكد من حذف العضو <strong>${esc(m?m.name:'')}</strong>؟ ستبقى تحليلاته في السجل.</p>`,[
+    {label:'حذف',cls:'btn-danger',fn:()=>{D.members=D.members.filter(x=>x.id!==id);save();closeModal();renderMembersList();toast('تم حذف العضو','success');}},
+    {label:'إلغاء',cls:'btn-ghost',fn:closeModal}
+  ]);
+}
+
+function saveApiKey(){const k=document.getElementById('apiKeyInput').value.trim();D.settings.apiKey=k;save();toast('تم حفظ مفتاح API','success');}
+function savePassword(){const p=document.getElementById('pwInput').value;D.settings.managerPassword=p;save();toast('تم حفظ كلمة المرور','success');}
+function saveEvalUrl(){const u=document.getElementById('evalUrl').value.trim();D.settings.evaluatorToolUrl=u;save();toast('تم حفظ الرابط','success');}
+
+async function testApiKey(){
+  const k=document.getElementById('apiKeyInput').value.trim();
+  const r=document.getElementById('apiTestResult');
+  if(!k){r.innerHTML=`<div class="alert alert-warning"><span>أدخل المفتاح أولاً</span></div>`;return;}
+  r.innerHTML=`<div class="alert alert-info"><span>جارٍ الاختبار...</span></div>`;
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-3-5-haiku-20241022',max_tokens:5,messages:[{role:'user',content:'hi'}]})
+    });
+    if(res.status===401||res.status===403){
+      const e=await res.json();
+      r.innerHTML=`<div class="alert alert-danger"><span>المفتاح غير صحيح أو منتهي الصلاحية: ${esc(e.error?.message||res.status)}</span></div>`;
+    }else{
+      r.innerHTML=`<div class="alert alert-success"><span>المفتاح صحيح والاتصال يعمل بنجاح</span></div>`;
+    }
+  }catch(e){r.innerHTML=`<div class="alert alert-danger"><span>تعذّر الاتصال بالشبكة: ${esc(e.message)}</span></div>`;}
+}
+
+function exportData(){
+  const blob=new Blob([JSON.stringify(D,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`text-improver-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();
+}
+
+function importData(e){
+  const f=e.target.files[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const imp=JSON.parse(ev.target.result);
+      showModal('استيراد البيانات','<p>سيؤدي الاستيراد إلى استبدال جميع البيانات الحالية. هل تريد الاستمرار؟</p>',[
+        {label:'استيراد',cls:'btn-primary',fn:()=>{D=imp;save();closeModal();navTo('dashboard');toast('تم استيراد البيانات','success');}},
+        {label:'إلغاء',cls:'btn-ghost',fn:closeModal}
+      ]);
+    }catch(err){toast('الملف غير صالح','danger');}
+  };
+  reader.readAsText(f);
+  e.target.value='';
+}
+
+function clearAnalyses(){
+  showModal('مسح التحليلات','<p>هل تريد مسح جميع التحليلات مع الاحتفاظ بالإعدادات والأعضاء وقاعدة المعرفة؟</p>',[
+    {label:'مسح التحليلات',cls:'btn-danger',fn:()=>{D.analyses=[];save();closeModal();toast('تم مسح جميع التحليلات','success');}},
+    {label:'إلغاء',cls:'btn-ghost',fn:closeModal}
+  ]);
+}
+
+function clearAll(){
+  showModal('مسح كل شيء','<div class="alert alert-danger"><span>تحذير: سيُمسح كل شيء بما في ذلك الأعضاء والإعدادات وقاعدة المعرفة والتحليلات. هذا الإجراء لا يمكن التراجع عنه.</span></div>',[
+    {label:'مسح كل شيء',cls:'btn-danger',fn:()=>{
+      showModal('تأكيد أخير','<p>اكتب <strong>مسح</strong> في الحقل أدناه للتأكيد:</p><div class="form-group"><input type="text" id="confirmClear" class="form-control" placeholder="اكتب: مسح"></div>',[
+        {label:'تأكيد الحذف',cls:'btn-danger',fn:()=>{
+          if(document.getElementById('confirmClear').value.trim()==='مسح'){
+            localStorage.removeItem('text_improver_data');loadData();closeModal();logout();toast('تم مسح جميع البيانات','success');
+          }else{toast('كلمة التأكيد غير صحيحة','warning');}
+        }},{label:'إلغاء',cls:'btn-ghost',fn:closeModal}
+      ]);
+    }},{label:'إلغاء',cls:'btn-ghost',fn:closeModal}
+  ]);
+}
+
+// ═══════════════════════ INIT ═══════════════════════
+function init(){
+  loadData();
+  showShell('screen-home');
+  renderHome();
+  // Close modal on overlay click
+  document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target.id==='modalOverlay')closeModal();});
+}
+
+init();
+</script>
+</body>
+</html>
