@@ -1,0 +1,531 @@
+/* خطوط مضمّنة (تُخزّن في الـ Service Worker) */
+@import "@fontsource/noto-kufi-arabic/400.css";
+@import "@fontsource/noto-kufi-arabic/700.css";
+@import "@fontsource/amiri/400.css";
+@import "@fontsource/amiri/700.css";
+@import "@fontsource/noto-sans-arabic/400.css";
+@import "@fontsource/noto-sans-arabic/600.css";
+@import "./tokens.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-ui);
+  color: var(--ink);
+  background:
+    radial-gradient(120% 80% at 50% 0%, #f3ece1 0%, #e7ddcc 60%, #ddd1bd 100%);
+  direction: rtl;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  min-height: 100dvh;
+}
+
+/* الحاوية الأساسية — تملأ الشاشة مع مراعاة المناطق الآمنة */
+.app-shell {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* حجز شريط علوي للأدوات وسفليّ لمؤشّر الصفحة كي لا يغطّيا النص */
+  padding:
+    calc(env(safe-area-inset-top) + 62px)
+    env(safe-area-inset-right)
+    calc(env(safe-area-inset-bottom) + 40px)
+    env(safe-area-inset-left);
+  overflow: hidden;
+}
+
+/* منطقة الكتاب */
+.book-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* StPageFlip يرتّب الصفحات LTR (الأقدم يساراً). للكتاب العربي نعكس الحاوية أفقياً
+   كي يُفتح من اليمين ويُقلَّب يميناً←يساراً، ثم نعكس محتوى كل صفحة عكساً مضاداً
+   ليعود النص إلى وضعه الصحيح. الانعكاس على .page-inner (لا يمسّها محرّك التقليب). */
+#book {
+  direction: ltr;
+  transform: scaleX(-1);
+}
+#book .page-inner {
+  transform: scaleX(-1);
+}
+
+/* ============ الصفحة (الورقة) ============ */
+.page {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  direction: rtl;
+  background:
+    linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 100%);
+  color: var(--ink);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ملمس ورق خافت جداً */
+.page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(46, 38, 31, 0.014) 0px,
+      rgba(46, 38, 31, 0.014) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  mix-blend-mode: multiply;
+}
+
+/* الظلال الواقعية عند التقليب يرسمها محرّك page-flip؛ نبقي الورق نظيفاً في السكون. */
+
+.page-inner {
+  position: relative;
+  z-index: 1;
+  /* page-flip يفرض display:block على .page، لذا نعتمد الارتفاع الصريح بدل flex-grow */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: var(--paper-pad-y) var(--paper-pad-x);
+}
+
+/* رقم الصفحة السفلي */
+.page-folio {
+  position: absolute;
+  bottom: calc(var(--paper-pad-y) * 0.42);
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--muted);
+  z-index: 2;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============ عناصر مشتركة ============ */
+.decor {
+  text-align: center;
+  color: var(--copper);
+  letter-spacing: 6px;
+  font-size: clamp(12px, 3.4vw, 16px);
+  margin: clamp(14px, 3vh, 24px) 0;
+  opacity: 0.85;
+}
+
+.narrative-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--narrative-title-size);
+  line-height: 1.35;
+  color: var(--ink);
+  margin-bottom: clamp(16px, 3.2vh, 28px);
+  position: relative;
+  padding-bottom: 0.5em;
+}
+.narrative-title::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: clamp(48px, 16vw, 84px);
+  height: 2px;
+  background: linear-gradient(90deg, var(--copper), transparent);
+  border-radius: 2px;
+}
+
+.body-text {
+  font-family: var(--font-body);
+  font-size: var(--body-size);
+  line-height: var(--body-leading);
+  color: var(--ink-soft);
+  text-align: right;
+  margin-bottom: clamp(12px, 2.4vh, 20px);
+}
+.body-text:last-child {
+  margin-bottom: 0;
+}
+
+/* منطقة قابلة للتمرير داخلياً فقط عند الضرورة القصوى (حماية من overflow) */
+.flow {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.flow.top {
+  justify-content: flex-start;
+}
+
+.amount {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ============ صفحات خاصة ============ */
+
+/* الغلاف / الغلاف الخلفي */
+.cover {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background:
+    radial-gradient(140% 100% at 50% 12%, #f4ecdf 0%, #e7dcc8 55%, #d8cab2 100%);
+}
+.cover .page-inner {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.cover-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--title-size);
+  color: var(--ink);
+  line-height: 1.15;
+  margin-bottom: clamp(14px, 3vh, 26px);
+}
+.cover-subtitle {
+  font-family: var(--font-body);
+  font-size: var(--subtitle-size);
+  color: var(--ink-soft);
+  line-height: 1.7;
+  max-width: 22ch;
+  margin: 0 auto;
+}
+.cover-decor {
+  margin-top: clamp(22px, 5vh, 44px);
+}
+
+/* خيط النور عبر الغلاف */
+.wire {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.55;
+}
+
+/* صفحة العنوان الداخلية */
+.title-desc {
+  font-family: var(--font-body);
+  font-size: var(--body-size);
+  line-height: 1.85;
+  color: var(--ink-soft);
+  text-align: center;
+  max-width: 30ch;
+  margin: clamp(18px, 4vh, 32px) auto 0;
+}
+
+/* الإهداء */
+.dedication .page-inner {
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+}
+.dedication .body-text {
+  text-align: center;
+  max-width: 32ch;
+}
+.dedication .lead {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--narrative-title-size);
+  color: var(--ink);
+  margin-bottom: clamp(12px, 2.4vh, 20px);
+}
+
+/* الجسر / الاقتباس */
+.bridge .page-inner {
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+}
+.bridge-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--section-title-size);
+  color: var(--ink);
+  margin-bottom: clamp(18px, 3.6vh, 30px);
+  line-height: 1.3;
+}
+.bridge .body-text {
+  text-align: center;
+  max-width: 30ch;
+  color: var(--ink-soft);
+}
+.bridge-emph {
+  font-family: var(--font-body);
+  font-size: clamp(18px, 5vw, 23px);
+  color: var(--copper);
+  line-height: 1.8;
+  margin-top: clamp(16px, 3vh, 26px);
+  max-width: 28ch;
+}
+
+/* الإحصاءات */
+.stats .page-inner {
+  justify-content: center;
+}
+.stats-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--section-title-size);
+  color: var(--ink);
+  text-align: center;
+  margin-bottom: clamp(6px, 1.5vh, 12px);
+}
+.stats-note {
+  font-family: var(--font-body);
+  font-size: clamp(14px, 3.6vw, 16px);
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: clamp(20px, 4vh, 36px);
+  max-width: 32ch;
+  margin-inline: auto;
+  line-height: 1.7;
+}
+.stat-item {
+  text-align: center;
+  margin-bottom: clamp(18px, 3.4vh, 30px);
+}
+.stat-item:last-child {
+  margin-bottom: 0;
+}
+.stat-value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(30px, 9vw, 46px);
+  color: var(--copper);
+  line-height: 1.1;
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+}
+.stat-label {
+  font-family: var(--font-ui);
+  font-size: clamp(13px, 3.4vw, 16px);
+  color: var(--ink-soft);
+  margin-top: 6px;
+}
+
+/* المساهم المليونيّ */
+.million .page-inner {
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+}
+.million-kicker {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--muted);
+  margin-bottom: clamp(20px, 5vh, 40px);
+}
+.million-name {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: clamp(26px, 7.4vw, 40px);
+  color: var(--ink);
+  line-height: 1.4;
+  max-width: 20ch;
+  margin: 0 auto clamp(16px, 3.4vh, 28px);
+}
+.million-amount {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(22px, 6.2vw, 32px);
+  color: var(--copper);
+}
+.million-rule {
+  width: clamp(40px, 12vw, 70px);
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--copper), transparent);
+  margin: clamp(20px, 4.4vh, 34px) auto 0;
+}
+
+/* افتتاح دفتر النفرة */
+.opener .page-inner {
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+}
+.opener-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--section-title-size);
+  color: var(--ink);
+  margin-bottom: clamp(8px, 1.6vh, 14px);
+}
+.opener-sub {
+  font-family: var(--font-body);
+  font-size: clamp(18px, 5vw, 23px);
+  color: var(--copper);
+  margin-bottom: clamp(18px, 3.6vh, 30px);
+}
+.opener-note {
+  font-family: var(--font-body);
+  font-size: clamp(14px, 3.8vw, 17px);
+  color: var(--muted);
+  line-height: 1.8;
+  max-width: 30ch;
+  margin-inline: auto;
+}
+
+/* دفتر النفرة — قائمة */
+.donorlist .page-inner {
+  padding-top: clamp(16px, 3.4vh, 30px);
+}
+.donorlist-head {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(15px, 4vw, 18px);
+  color: var(--muted);
+  text-align: center;
+  letter-spacing: 1px;
+  margin-bottom: clamp(12px, 2.4vh, 18px);
+  padding-bottom: clamp(8px, 1.6vh, 12px);
+  border-bottom: 1px solid var(--hairline);
+}
+.donor-table {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  font-family: var(--font-ui);
+}
+.donor-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: clamp(8px, 3vw, 16px);
+  padding: clamp(5px, 1.1vh, 9px) 0;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+.donor-row:last-child {
+  border-bottom: none;
+}
+.donor-n {
+  font-size: clamp(11px, 3vw, 13px);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 2.4ch;
+  text-align: center;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+.donor-name {
+  font-family: var(--font-body);
+  font-size: var(--list-size);
+  color: var(--ink);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.donor-amount {
+  font-size: clamp(13px, 3.4vw, 16px);
+  color: var(--copper);
+  font-weight: 600;
+  white-space: nowrap;
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+}
+
+/* الخاتمة */
+.closing .narrative-title {
+  text-align: center;
+}
+.closing .narrative-title::after {
+  right: 50%;
+  transform: translateX(50%);
+}
+.closing .page-inner {
+  justify-content: center;
+}
+.closing .body-text {
+  text-align: right;
+}
+
+/* بيان النسخة */
+.version .page-inner {
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+}
+.version-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--narrative-title-size);
+  color: var(--ink);
+  margin-bottom: clamp(18px, 3.6vh, 28px);
+}
+.version .body-text {
+  text-align: center;
+  color: var(--muted);
+  max-width: 32ch;
+  font-size: clamp(14px, 3.8vw, 17px);
+}
+
+/* الغلاف الخلفي */
+.backcover .page-inner {
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+}
+.backcover-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(26px, 7vw, 40px);
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+.backcover-sub {
+  font-family: var(--font-body);
+  font-size: clamp(14px, 3.8vw, 17px);
+  color: var(--muted);
+}
+
+/* حركة أقل عند الطلب */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+  }
+}
