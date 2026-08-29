@@ -1,31 +1,25 @@
 import type { BookPage, Line } from "../lib/types";
 
-// ملاحظة: تُصيَّر هذه المكوّنات إلى HTML ثابت وتُسلَّم إلى StPageFlip.
-// لا تعتمد على حالة React بعد التصيير.
+// تُصيَّر هذه المكوّنات إلى HTML ثابت وتُسلَّم إلى StPageFlip.
 
 function Decor() {
   return <div className="decor" aria-hidden="true">◆ ◆ ◆</div>;
 }
 
-function paras(lines: Line[] | undefined) {
-  return (lines ?? []).filter((l): l is { kind: "para"; text: string } => l.kind === "para");
-}
-
-// رقم الصفحة داخل الورقة يُترك للمؤشّر العام أسفل الشاشة تفادياً للتداخل مع النص.
-function Folio(_: { page: BookPage }) {
-  return null;
+function paras(lines: Line[]) {
+  return lines.filter((l): l is { kind: "para"; text: string } => l.kind === "para");
 }
 
 function WireGlow() {
-  // خيط بصري رفيع مستوحى من سلك كهرباء يتحوّل إلى أثر نور — تجريديّ راقٍ.
+  // خيطٌ رفيع مستوحى من سلك كهرباء يتحوّل إلى أثر نور — تجريديّ راقٍ.
   return (
     <svg className="wire" viewBox="0 0 100 400" preserveAspectRatio="none" aria-hidden="true">
       <defs>
         <linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--copper)" stopOpacity="0.0" />
+          <stop offset="0%" stopColor="var(--copper)" stopOpacity="0" />
           <stop offset="45%" stopColor="var(--copper)" stopOpacity="0.55" />
           <stop offset="70%" stopColor="var(--glow)" stopOpacity="0.85" />
-          <stop offset="100%" stopColor="var(--glow)" stopOpacity="0.0" />
+          <stop offset="100%" stopColor="var(--glow)" stopOpacity="0" />
         </linearGradient>
       </defs>
       <path
@@ -68,19 +62,16 @@ function TitlePage({ page }: { page: BookPage }) {
 }
 
 function DedicationPage({ page }: { page: BookPage }) {
-  const lines = page.lines ?? [];
   return (
     <div className="page-inner">
-      {lines.map((l, i) =>
+      {page.lines.map((l, i) =>
         l.kind === "decor" ? (
           <Decor key={i} />
-        ) : l.kind === "para" ? (
-          i === 0 ? (
-            <p key={i} className="lead">{l.text}</p>
-          ) : (
-            <p key={i} className="body-text">{l.text}</p>
-          )
-        ) : null
+        ) : i === 0 ? (
+          <p key={i} className="lead">{l.text}</p>
+        ) : (
+          <p key={i} className="body-text">{l.text}</p>
+        )
       )}
     </div>
   );
@@ -103,110 +94,20 @@ function NarrativePage({ page }: { page: BookPage }) {
 }
 
 function BridgePage({ page }: { page: BookPage }) {
-  const lines = page.lines ?? [];
   const p = paras(page.lines);
   const title = p[0]?.text;
-  const rest = lines.slice(1); // بعد العنوان
+  const rest = p.slice(1);
   return (
     <div className="page-inner">
       <h2 className="bridge-title">{title}</h2>
-      {rest.map((l, i) => {
-        if (l.kind === "decor") return <Decor key={i} />;
-        if (l.kind === "para") {
-          const isLast = i === rest.length - 1;
-          return (
-            <p key={i} className={isLast ? "bridge-emph" : "body-text"}>
-              {l.text}
-            </p>
-          );
-        }
-        return null;
+      {rest.map((b, i) => {
+        const isLast = i === rest.length - 1;
+        return (
+          <p key={i} className={isLast ? "bridge-emph" : "body-text"}>
+            {b.text}
+          </p>
+        );
       })}
-    </div>
-  );
-}
-
-function StatsPage({ page }: { page: BookPage }) {
-  const stats = page.stats ?? [];
-  const p = paras(page.lines);
-  return (
-    <div className="page-inner">
-      <h2 className="stats-title">{p[0]?.text}</h2>
-      {p[1] && <p className="stats-note">{p[1].text}</p>}
-      <div className="flow">
-        {stats.map((s, i) => (
-          <div className="stat-item" key={i}>
-            <div className="stat-value">{s.value}</div>
-            <div className="stat-label">{s.label}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function MillionPage({ page }: { page: BookPage }) {
-  return (
-    <div className="page-inner">
-      <div className="million-kicker">من صفحات العطاء</div>
-      <div className="million-name">{page.name}</div>
-      <div className="million-amount amount">{page.amount_raw}</div>
-      <div className="million-rule" aria-hidden="true" />
-    </div>
-  );
-}
-
-function OpenerPage({ page }: { page: BookPage }) {
-  const p = paras(page.lines);
-  return (
-    <div className="page-inner">
-      <h2 className="opener-title">{p[0]?.text}</h2>
-      {p[1] && <div className="opener-sub">{p[1].text}</div>}
-      {p[2] && <p className="opener-note">{p[2].text}</p>}
-    </div>
-  );
-}
-
-function DonorListPage({ page }: { page: BookPage }) {
-  const rows = page.rows ?? [];
-  return (
-    <div className="page-inner">
-      <div className="donorlist-head">{page.heading || "دفتر النفرة"}</div>
-      <div className="donor-table">
-        {rows.map((r, i) => (
-          <div className="donor-row" key={i}>
-            <span className="donor-n">{r.n ?? ""}</span>
-            <span className="donor-name">{r.name}</span>
-            <span className="donor-amount amount">{r.amount_raw}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ClosingPage({ page }: { page: BookPage }) {
-  const p = paras(page.lines);
-  return (
-    <div className="page-inner">
-      <h2 className="narrative-title">{p[0]?.text}</h2>
-      <div className="flow">
-        {p.slice(1).map((b, i) => (
-          <p key={i} className="body-text">{b.text}</p>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function VersionPage({ page }: { page: BookPage }) {
-  const p = paras(page.lines);
-  return (
-    <div className="page-inner">
-      <h2 className="version-title">{p[0]?.text}</h2>
-      {p.slice(1).map((b, i) => (
-        <p key={i} className="body-text">{b.text}</p>
-      ))}
     </div>
   );
 }
@@ -229,12 +130,6 @@ const CLASSES: Record<string, string> = {
   DEDICATION: "dedication",
   NARRATIVE: "narrative",
   BRIDGE: "bridge",
-  STATS: "stats",
-  MILLION_DONOR: "million",
-  REGULAR_OPENER: "opener",
-  REGULAR_LIST: "donorlist",
-  CLOSING: "closing",
-  VERSION: "version",
   BACK_COVER: "backcover",
 };
 
@@ -246,21 +141,10 @@ export function PageView({ page }: { page: BookPage }) {
     case "DEDICATION": body = <DedicationPage page={page} />; break;
     case "NARRATIVE": body = <NarrativePage page={page} />; break;
     case "BRIDGE": body = <BridgePage page={page} />; break;
-    case "STATS": body = <StatsPage page={page} />; break;
-    case "MILLION_DONOR": body = <MillionPage page={page} />; break;
-    case "REGULAR_OPENER": body = <OpenerPage page={page} />; break;
-    case "REGULAR_LIST": body = <DonorListPage page={page} />; break;
-    case "CLOSING": body = <ClosingPage page={page} />; break;
-    case "VERSION": body = <VersionPage page={page} />; break;
     case "BACK_COVER": body = <BackCoverPage page={page} />; break;
     default: body = null;
   }
-  return (
-    <>
-      {body}
-      <Folio page={page} />
-    </>
-  );
+  return <>{body}</>;
 }
 
 export function pageClass(page: BookPage): string {
@@ -269,9 +153,6 @@ export function pageClass(page: BookPage): string {
 
 export function pageLabel(page: BookPage): string {
   const n = parseInt(page.id, 10);
-  const label =
-    page.type === "MILLION_DONOR"
-      ? `${page.name} — ${page.amount_raw}`
-      : paras(page.lines)[0]?.text || page.type;
-  return `صفحة ${n}: ${label}`;
+  const title = paras(page.lines)[0]?.text || page.type;
+  return `صفحة ${n}: ${title}`;
 }

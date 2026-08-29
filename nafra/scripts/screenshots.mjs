@@ -23,19 +23,20 @@ const PHONES = [
 ];
 
 // أهداف اللقطات: (اسم، فهرس الصفحة 0-based). نقفز عبر استعادة آخر صفحة.
+// النسخة السردية: 36 صفحة.
 const TARGETS = [
   { label: "cover", index: 0 },
+  { label: "title", index: 1 },
   { label: "dedication", index: 2 },
-  { label: "narrative", index: 3 },
-  { label: "school-girls", index: 11 }, // طابور البنات (صفحة 012)
-  { label: "school-boys", index: 12 },
-  { label: "bridge", index: 19 },
-  { label: "stats", index: 20 },
-  { label: "top-million", index: 21 },
-  { label: "opener", index: 68 },
-  { label: "donorlist", index: 69 },
-  { label: "donorlist-mid", index: 80 },
-  { label: "closing", index: 96 },
+  { label: "narrative-open", index: 3 },
+  { label: "geography-bridge", index: 11 }, // الرِّكيب.. جغرافيا وجدانية
+  { label: "martyr-saydali", index: 13 },   // الصيدلي
+  { label: "martyr-abualkaik", index: 14 }, // أبوالكيك
+  { label: "ahmadan-bridge", index: 17 },   // الأحمدان (جسر)
+  { label: "nisa", index: 24 },             // نساء الرِّكيب
+  { label: "school-girls", index: 26 },     // طابور البنات
+  { label: "ending", index: 34 },           // وما لم يستطيعوا أخذه
+  { label: "afterword", index: 35 },        // والنَّفرة ما تزال قائمة
 ];
 
 async function overflowReport(page) {
@@ -116,11 +117,9 @@ const run = async () => {
   const lp = await lctx.newPage();
   await lp.goto(BASE, { waitUntil: "networkidle" });
   await lp.waitForTimeout(900);
-  for (let i = 0; i < 4; i++) {
-    await lp.evaluate(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft" })));
-    await lp.waitForTimeout(150);
-  }
-  await lp.waitForTimeout(500);
+  await lp.evaluate(() => { try { localStorage.setItem("nafra.lastPage", "13"); } catch {} });
+  await lp.reload({ waitUntil: "networkidle" });
+  await lp.waitForTimeout(1400);
   await lp.screenshot({ path: join(OUT, "landscape_spread_900x430.png") });
   const orient = await lp.evaluate(() => document.querySelectorAll("#book .stf__item").length);
   await lctx.close();

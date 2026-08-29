@@ -1,26 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-مستورِد مخطوط «النّفرة».
+مستورِد مخطوط «النّفرة» (النسخة السردية).
 
-يقرأ manuscript.docx بترتيب المستند (فقرات + جداول)، ويقسّم المحتوى وفق علامات
-[[PAGE ...]]، ويحفظ فقط ما بين [[CONTENT]] و [[/CONTENT]]، ويتجاهل كتل
-[[DESIGN NOTE ...]]. النص مصدر الحقيقة: لا إعادة صياغة ولا تطبيع ولا تصحيح.
+الكتاب صار سيرةً للرِّكيب والنفرة معنىً، بلا قوائم مساهمات. يقرأ المستورِد
+manuscript.docx بترتيب المستند، ويعيد ترقيم الصفحات ترقيماً صحيحاً (لأنّ أرقام
+المخطوط صارت مكرّرةً بعد الحذف والإضافة)، ويحترم تعليق المؤلّف: «ابتداءً من هذه
+الصفحة لم يعد جزءاً من الكتاب» — فيُسقِط الصفحةَ المؤشَّرة وكلَّ ما بعدها.
 
-المخرجات:
-  src/content/book-pages.json  — قائمة الصفحات المرتبة كما في المخطوط.
-  src/content/donors.json      — سجلّ المساهمين المستخرج من صفحات المساهمات.
-
-يفشل البناء (خروج != 0) عند أي خرق للثوابت التوثيقية.
+يحفظ فقط ما بين [[CONTENT]] و[[/CONTENT]]، ويتجاهل [[DESIGN NOTE]]. النصّ مصدر
+الحقيقة: لا إعادة صياغة ولا تصحيح. المخرجات: src/content/book-pages.json.
 """
 import json
 import re
 import sys
 import zipfile
 from pathlib import Path
-from xml.etree import ElementTree as ET
-
-W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SRC_DOCX = SCRIPT_DIR / "source" / "manuscript.docx"
@@ -32,48 +27,19 @@ CONTENT_CLOSE = "[[/CONTENT]]"
 DESIGN_NOTE_PREFIX = "[[DESIGN NOTE"
 DECOR = "◆  ◆  ◆"
 
-# تصحيحات نصّية مأذونة من المؤلف (لا تمسّ أسماء المساهمين ولا المبالغ ولا الترتيب).
-# مفتاح = النص كما ورد في المخطوط، قيمة = النص المصحّح. تُطبَّق على فقرات المتن فقط.
-ERRATA = {
-    "وما لم يستطعوا أخذه": "وما لم يستطيعوا أخذه",  # صفحة 019: تصحيح إملائي
-}
+# أنواع الصفحات المعتمدة في النسخة السردية.
+KNOWN_TYPES = {"COVER", "TITLE", "DEDICATION", "NARRATIVE", "BRIDGE", "BACK_COVER"}
 
 
-def para_text(p):
-    """يجمع نصّ فقرة من عناصر w:t مع احترام الفواصل، دون أي تطبيع للمحارف."""
-    parts = []
-    for t in p.iter(f"{W}t"):
-        parts.append(t.text or "")
-    for br in p.iter(f"{W}br"):
-        pass  # w:br تُعامل ضمن الفقرة؛ نادرة هنا
-    return "".join(parts)
-
-
-def table_rows(tbl):
-    """يعيد صفوف الجدول كقوائم خلايا نصّية، بترتيب المستند."""
-    rows = []
-    for tr in tbl.findall(f"{W}tr"):
-        cells = []
-        for tc in tr.findall(f"{W}tc"):
-            cell_parts = [para_text(p) for p in tc.findall(f"{W}p")]
-            cells.append("\n".join(s for s in cell_parts).strip())
-        rows.append(cells)
-    return rows
-
-
-def iter_body_blocks(body):
-    """يمرّ على الأبناء المباشرين للجسم بالترتيب: ('p', element) أو ('tbl', element)."""
-    for child in body:
-        if child.tag == f"{W}p":
-            yield ("p", child)
-        elif child.tag == f"{W}tbl":
-            yield ("tbl", child)
-
-
-def parse_amount(raw):
-    """يستخرج قيمة رقمية من نصّ مبلغ مثل «30,000,000 جنيه» دون تغيير العرض الأصلي."""
-    digits = re.sub(r"[^\d]", "", raw)
-    return int(digits) if digits else None
+def para_text_and_runs(p_xml):
+    """نصّ الفقرة من عناصر w:t، مع علامةٍ إن كانت الفقرة تحمل مرساة تعليق."""
+    texts = re.findall(r"<w:t[^>]*>(.*?)</w:t>", p_xml, re.S)
+    text = "".join(texts)
+    for a, b in [("&amp;", "&"), ("&lt;", "<"), ("&gt;", ">"),
+                 ("&quot;", '"'), ("&apos;", "'")]:
+        text = text.replace(a, b)
+    has_comment = "<w:commentRangeStart" in p_xml
+    return text, has_comment
 
 
 def main():
@@ -81,177 +47,91 @@ def main():
         sys.exit(f"لم يُعثر على المخطوط: {SRC_DOCX}")
 
     with zipfile.ZipFile(SRC_DOCX) as z:
-        xml = z.read("word/document.xml")
-    root = ET.fromstring(xml)
-    body = root.find(f"{W}body")
+        xml = z.read("word/document.xml").decode("utf-8", "ignore")
 
-    pages = []
+    body_start = xml.find("<w:body")
+    body = xml[body_start:] if body_start != -1 else xml
+
+    # تقسيمٌ إلى فقرات مع الحفاظ على الترتيب.
+    paras = re.findall(r"<w:p\b.*?</w:p>", body, re.S)
+
+    pages = []          # كل صفحة: {"type", "blocks":[...]}
     current = None
     in_content = False
-    appearance = 0  # ترتيب ظهور المساهم في المخطوط (يُستخدم لكسر التعادل)
+    cut_reached = False
 
-    for kind, el in iter_body_blocks(body):
-        if kind == "p":
-            text = para_text(el)
-            stripped = text.strip()
-            m = PAGE_RE.match(stripped)
-            if m:
-                # افتتاح صفحة جديدة
-                current = {
-                    "id": m.group(1),
-                    "type": m.group(2),
-                    "blocks": [],  # عناصر مرئية: {"kind":"para"|"decor"|"table", ...}
-                }
-                pages.append(current)
+    for p_xml in paras:
+        text, has_comment = para_text_and_runs(p_xml)
+        stripped = text.strip()
+
+        m = PAGE_RE.match(stripped)
+        if m:
+            # مرساةُ تعليق المؤلّف على فقرة مُعلَّم الصفحة = قطعٌ من هنا.
+            if has_comment:
+                cut_reached = True
+            if cut_reached:
+                current = None
                 in_content = False
                 continue
-            if stripped == CONTENT_OPEN:
-                in_content = True
-                continue
-            if stripped == CONTENT_CLOSE:
-                in_content = False
-                continue
-            if stripped.startswith(DESIGN_NOTE_PREFIX):
-                continue  # بيانات تحريرية لا تُعرض
-            if in_content and current is not None:
-                if stripped == "":
-                    continue
-                if stripped == DECOR:
-                    current["blocks"].append({"kind": "decor"})
-                else:
-                    # نحافظ على النص كما ورد، مع تطبيق تصحيحات المؤلف المأذونة فقط.
-                    clean = text.strip()
-                    clean = ERRATA.get(clean, clean)
-                    current["blocks"].append({"kind": "para", "text": clean})
-        else:  # tbl
-            if in_content and current is not None:
-                rows = table_rows(el)
-                current["blocks"].append({"kind": "table", "rows": rows})
+            current = {"type": m.group(2).strip(), "blocks": []}
+            pages.append(current)
+            in_content = False
+            continue
 
-    # ---- بناء تمثيل صفحات نظيف حسب النوع ----
+        if cut_reached or current is None:
+            continue
+        if stripped == CONTENT_OPEN:
+            in_content = True
+            continue
+        if stripped == CONTENT_CLOSE:
+            in_content = False
+            continue
+        if stripped.startswith(DESIGN_NOTE_PREFIX):
+            continue
+        if in_content:
+            if stripped == "":
+                continue
+            if stripped == DECOR:
+                current["blocks"].append({"kind": "decor"})
+            else:
+                current["blocks"].append({"kind": "para", "text": stripped})
+
+    # بناء تمثيلٍ نظيف وإعادة ترقيمٍ صحيح (001، 002، …) بترتيب المستند.
     book_pages = []
-    donors = []  # {"n": int, "name": str, "amount": int, "amount_raw": str, "source": "million"|"regular"}
-
-    for p in pages:
-        ptype = p["type"]
-        blocks = p["blocks"]
-        entry = {"id": p["id"], "type": ptype}
-
-        if ptype in ("COVER", "TITLE", "DEDICATION", "NARRATIVE", "BRIDGE",
-                     "CLOSING", "VERSION", "BACK_COVER", "REGULAR_OPENER", "STATS"):
-            # صفحات نصّية: أول فقرة نصّية غالباً عنوان، والبقية متن؛ لكن نحفظ التسلسل كما هو
-            lines = []
-            for b in blocks:
-                if b["kind"] == "para":
-                    lines.append({"kind": "para", "text": b["text"]})
-                elif b["kind"] == "decor":
-                    lines.append({"kind": "decor"})
-                elif b["kind"] == "table":
-                    # STATS قد يستخدم جدولاً؛ نحفظه صفوفاً
-                    lines.append({"kind": "table", "rows": b["rows"]})
-            entry["lines"] = lines
-            if ptype == "STATS":
-                stats = []
-                for b in blocks:
-                    if b["kind"] == "table":
-                        for row in b["rows"]:
-                            cell = (row[0] if row else "").strip()
-                            if not cell:
-                                continue
-                            segs = [s.strip() for s in cell.split("\n") if s.strip()]
-                            value = segs[0] if segs else ""
-                            label = " ".join(segs[1:]) if len(segs) > 1 else ""
-                            stats.append({"value": value, "label": label})
-                entry["stats"] = stats
-
-        elif ptype == "MILLION_DONOR":
-            # فقرتان: الاسم ثم المبلغ (قد يوجد جدول في بعض النسخ)
-            name = None
-            amount_raw = None
-            texts = [b["text"] for b in blocks if b["kind"] == "para"]
-            if len(texts) >= 2:
-                name, amount_raw = texts[0], texts[1]
-            elif len(texts) == 1:
-                name = texts[0]
-            # جداول احتياطية
-            if (name is None or amount_raw is None):
-                for b in blocks:
-                    if b["kind"] == "table":
-                        for row in b["rows"]:
-                            cells = [c for c in row if c]
-                            if len(cells) >= 2:
-                                name = name or cells[0]
-                                amount_raw = amount_raw or cells[-1]
-            amount = parse_amount(amount_raw or "")
-            appearance += 1
-            donors.append({
-                "order": appearance,  # ترتيب السجل الأصلي كما رتّبه المخطوط (مفتاح كسر التعادل)
-                "n": None,            # لا يحمل رقم سجل ظاهراً في صفحته المستقلة
-                "name": name,
-                "amount": amount,
-                "amount_raw": amount_raw,
-                "source": "million",
-            })
-            entry["name"] = name
-            entry["amount"] = amount
-            entry["amount_raw"] = amount_raw
-
-        elif ptype == "REGULAR_LIST":
-            heading = None
-            rows_out = []
-            for b in blocks:
-                if b["kind"] == "para" and heading is None:
-                    heading = b["text"]
-                elif b["kind"] == "table":
-                    for row in b["rows"]:
-                        cells = [c.strip() for c in row]
-                        # تنسيق متوقّع: رقم | اسم | مبلغ
-                        if len(cells) < 3:
-                            continue
-                        num_raw, name, amount_raw = cells[0], cells[1], cells[2]
-                        if not (num_raw or name or amount_raw):
-                            continue
-                        # تخطّي صف العنوان إن وُجد (غير رقمي في عمود الرقم)
-                        n_digits = re.sub(r"[^\d]", "", num_raw)
-                        rec = {
-                            "n": int(n_digits) if n_digits else None,
-                            "name": name,
-                            "amount": parse_amount(amount_raw),
-                            "amount_raw": amount_raw,
-                        }
-                        rows_out.append(rec)
-                        appearance += 1
-                        donors.append({"order": appearance, **rec, "source": "regular"})
-            entry["heading"] = heading
-            entry["rows"] = rows_out
-        else:
-            entry["lines"] = [{"kind": "para", "text": b.get("text", "")} for b in blocks if b["kind"] == "para"]
-
-        book_pages.append(entry)
+    for i, p in enumerate(pages, start=1):
+        lines = []
+        for b in p["blocks"]:
+            if b["kind"] == "para":
+                lines.append({"kind": "para", "text": b["text"]})
+            else:
+                lines.append({"kind": "decor"})
+        book_pages.append({
+            "id": f"{i:03d}",
+            "type": p["type"],
+            "lines": lines,
+        })
 
     # ---------- المدقّقات ----------
     errors = []
-    if len(book_pages) != 100:
-        errors.append(f"عدد الصفحات {len(book_pages)} != 100")
-    ids = [p["id"] for p in book_pages]
-    if len(set(ids)) != len(ids):
-        dup = [i for i in ids if ids.count(i) > 1]
-        errors.append(f"معرّفات صفحات مكرّرة: {sorted(set(dup))}")
-
-    million_count = sum(1 for d in donors if d["source"] == "million")
-    regular_count = sum(1 for d in donors if d["source"] == "regular")
-
-    for d in donors:
-        if not d.get("name") or not str(d["name"]).strip():
-            errors.append(f"مساهم باسم فارغ: {d}")
-        if d.get("amount") is None or not isinstance(d["amount"], int):
-            errors.append(f"مبلغ غير رقمي: {d}")
-
-    for d in donors:
-        if d["source"] == "regular" and d.get("amount", 0) >= 1_000_000:
-            errors.append(f"مساهمة مليونية داخل دفتر النفرة: {d}")
-        if d["source"] == "million" and d.get("amount", 0) < 1_000_000:
-            errors.append(f"مساهمة دون المليون في صفحات العطاء: {d}")
+    if not book_pages:
+        errors.append("لا صفحات بعد الاستيراد")
+    if not cut_reached:
+        errors.append("لم يُعثر على مرساة تعليق القطع — تحقّق من المخطوط")
+    for p in book_pages:
+        if p["type"] not in KNOWN_TYPES:
+            errors.append(f"نوع صفحة غير متوقّع في النسخة السردية: {p['type']} (صفحة {p['id']})")
+        paras_txt = [l for l in p["lines"] if l["kind"] == "para"]
+        if p["type"] in ("NARRATIVE", "BRIDGE") and not paras_txt:
+            errors.append(f"صفحة {p['id']} ({p['type']}) بلا نصّ")
+    # لا تتسرّب علاماتٌ تحريرية إلى المتن
+    for p in book_pages:
+        for l in p["lines"]:
+            if l["kind"] == "para" and ("[[" in l["text"] or "DO_NOT_RENDER" in l["text"]):
+                errors.append(f"علامة تحريرية مسرَّبة في صفحة {p['id']}: {l['text'][:40]}")
+    # الخاتمة المتوقّعة
+    titles = [next((l["text"] for l in p["lines"] if l["kind"] == "para"), "") for p in book_pages]
+    if "وما لم يستطيعوا أخذه" not in "\n".join(titles):
+        errors.append("لم يُعثر على صفحة «وما لم يستطيعوا أخذه»")
 
     if errors:
         print("فشل التحقق:", file=sys.stderr)
@@ -263,20 +143,17 @@ def main():
     (OUT_DIR / "book-pages.json").write_text(
         json.dumps(book_pages, ensure_ascii=False, indent=2), encoding="utf-8"
     )
-    (OUT_DIR / "donors.json").write_text(
-        json.dumps(donors, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    # ملفُّ المساهمين لم يعد له وجود في النسخة السردية.
+    donors_path = OUT_DIR / "donors.json"
+    if donors_path.exists():
+        donors_path.unlink()
 
-    total_amount = sum(d["amount"] for d in donors)
-    print("تم الاستيراد بنجاح:")
-    print(f"  الصفحات: {len(book_pages)}")
     from collections import Counter
+    print("تم الاستيراد بنجاح (النسخة السردية):")
+    print(f"  عدد الصفحات: {len(book_pages)}")
     for t, c in Counter(p["type"] for p in book_pages).items():
         print(f"    {t}: {c}")
-    print(f"  المساهمات المليونية: {million_count}")
-    print(f"  مساهمات دفتر النفرة: {regular_count}")
-    print(f"  إجمالي المساهمات: {million_count + regular_count}")
-    print(f"  الإجمالي المالي: {total_amount:,} جنيه")
+    print(f"  الصفحة الأخيرة: {titles[-1]!r}")
 
 
 if __name__ == "__main__":
