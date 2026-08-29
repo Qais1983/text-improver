@@ -1,0 +1,29 @@
+# إعداد نشر «النّفرة» على Netlify.
+# التطبيق داخل مجلد nafra/، ومحتوى الكتاب مُولَّد ومُودَع مسبقاً،
+# لذا يستخدم بناء CI دون الحاجة إلى Python على منصّة النشر.
+
+[build]
+  base = "nafra"
+  command = "npm run build:ci"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# لا توجيه SPA لازم (لا مسارات عميلة)، لكن نضمن رجوع أي مسار غير معروف للجذر.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# ترويسات تخزين مؤقت: الأصول ذات البصمة طويلة الأمد.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# لا نُخزّن عامل الخدمة والـ manifest طويلاً كي تصل التحديثات.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
