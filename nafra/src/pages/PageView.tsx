@@ -39,10 +39,11 @@ function CoverPage({ page }: { page: BookPage }) {
     <div className="page-inner">
       <WireGlow />
       <h1 className="cover-title">{p[0]?.text}</h1>
-      {p[1] && <p className="cover-subtitle">{p[1].text}</p>}
+      {p[1] && <p className="cover-subtitle cover-sub-emph">{p[1].text}</p>}
       <div className="cover-decor">
         <Decor />
       </div>
+      {p[2] && <p className="cover-author">{p[2].text}</p>}
     </div>
   );
 }
