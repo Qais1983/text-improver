@@ -80,6 +80,8 @@ body {
   position: relative;
   width: 100%;
   height: 100%;
+  /* معامل ملاءمة النصّ للصفحة؛ يُضبط آلياً (<=1) للصفحات الكثيفة كي لا يُقصَّ سطر */
+  --fit: 1;
   direction: rtl;
   background:
     linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 100%);
@@ -148,10 +150,10 @@ body {
 .narrative-title {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: var(--narrative-title-size);
+  font-size: calc(var(--narrative-title-size) * var(--fit));
   line-height: 1.35;
   color: var(--ink);
-  margin-bottom: clamp(22px, 4.4vh, 38px);
+  margin-bottom: calc(clamp(22px, 4.4vh, 38px) * var(--fit));
   position: relative;
   padding-bottom: 0.5em;
 }
@@ -168,11 +170,11 @@ body {
 
 .body-text {
   font-family: var(--font-body);
-  font-size: var(--body-size);
+  font-size: calc(var(--body-size) * var(--fit));
   line-height: var(--body-leading);
   color: var(--ink-soft);
   text-align: right;
-  margin-bottom: clamp(12px, 2.4vh, 20px);
+  margin-bottom: calc(clamp(12px, 2.4vh, 20px) * var(--fit));
 }
 .body-text:last-child {
   margin-bottom: 0;
@@ -300,9 +302,9 @@ body {
 .bridge-title {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: var(--section-title-size);
+  font-size: calc(var(--section-title-size) * var(--fit));
   color: var(--ink);
-  margin-bottom: clamp(18px, 3.6vh, 30px);
+  margin-bottom: calc(clamp(18px, 3.6vh, 30px) * var(--fit));
   line-height: 1.3;
 }
 .bridge .body-text {
@@ -312,10 +314,10 @@ body {
 }
 .bridge-emph {
   font-family: var(--font-body);
-  font-size: clamp(18px, 5vw, 23px);
+  font-size: calc(clamp(18px, 5vw, 23px) * var(--fit));
   color: var(--copper);
   line-height: 1.8;
-  margin-top: clamp(16px, 3vh, 26px);
+  margin-top: calc(clamp(16px, 3vh, 26px) * var(--fit));
   max-width: 28ch;
 }
 

@@ -50,6 +50,74 @@ function computeBox(stage: HTMLElement) {
   return { w: single, h, single, portrait: true };
 }
 
+const FIT_FLOOR = 0.8;
+
+/**
+ * يحسب معامل --fit لكلّ صفحةٍ عبر قياسٍ خارج الشاشة (مستقلٍّ عن StPageFlip)،
+ * بعرض صفحةٍ واحدة (single) وارتفاعها (h)، ثمّ يطبّقه على الصفحات الحقيقية.
+ * يُنفَّذ بعد جهوز الخطوط كي يكون القياس صحيحاً.
+ */
+function computeFits(pageHtml: string[], single: number, h: number): number[] {
+  const host = document.createElement("div");
+  host.style.cssText =
+    `position:absolute;left:-99999px;top:0;width:${single}px;height:${h}px;` +
+    `visibility:hidden;pointer-events:none;`;
+  host.dir = "rtl";
+  document.body.appendChild(host);
+  const fits = pageHtml.map((phtml) => {
+    host.innerHTML = phtml;
+    const page = host.firstElementChild as HTMLElement;
+    page.style.width = `${single}px`;
+    page.style.height = `${h}px`;
+    const inner = page.firstElementChild as HTMLElement | null;
+    let fit = 1;
+    if (inner) {
+      for (let i = 0; i < 6; i++) {
+        if (inner.scrollHeight <= page.clientHeight + 1) break;
+        fit = Math.max(FIT_FLOOR, fit - 0.04);
+        page.style.setProperty("--fit", String(fit));
+        if (fit <= FIT_FLOOR) break;
+      }
+    }
+    return fit;
+  });
+  host.remove();
+  return fits;
+}
+
+function applyFits(bookEl: HTMLElement, fits: number[]) {
+  // يُضبط على .page-inner لا على .page، فمحرّك التقليب يمسح أنماط .page لا محتواها.
+  const pages = bookEl.querySelectorAll<HTMLElement>(".page");
+  pages.forEach((page, i) => {
+    const inner = page.firstElementChild as HTMLElement | null;
+    inner?.style.setProperty("--fit", String(fits[i] ?? 1));
+  });
+}
+
+/**
+ * يقيس الصفحات المرصوصة في #book (قبل تسليمها للمحرّك) بعرض صفحةٍ واحدة، ويخبز
+ * معامل --fit في كلٍّ منها كي يتّسع محتواها ضمن ارتفاع الورقة.
+ */
+function fitStackedPages(bookEl: HTMLElement, single: number, h: number) {
+  bookEl.style.width = `${single}px`;
+  bookEl.style.height = "auto";
+  bookEl.querySelectorAll<HTMLElement>(".page").forEach((page) => {
+    page.style.height = `${h}px`;
+    const inner = page.firstElementChild as HTMLElement | null;
+    if (inner) {
+      inner.style.setProperty("--fit", "1");
+      let fit = 1;
+      for (let i = 0; i < 6; i++) {
+        if (inner.scrollHeight <= page.clientHeight + 1) break;
+        fit = Math.max(FIT_FLOOR, fit - 0.04);
+        inner.style.setProperty("--fit", String(fit));
+        if (fit <= FIT_FLOOR) break;
+      }
+    }
+    page.style.height = "";
+  });
+}
+
 export function Flipbook({ pages, startPage, onFlip, onInit, reducedMotion }: Props) {
   const stageRef = useRef<HTMLDivElement>(null);
   const bookRef = useRef<HTMLDivElement>(null);
@@ -58,15 +126,15 @@ export function Flipbook({ pages, startPage, onFlip, onInit, reducedMotion }: Pr
 
   // HTML ثابت لكل الصفحات (يُولَّد مرة واحدة، خارج شجرة React الحيّة).
   const html = useRef<string>("");
+  const pageHtml = useRef<string[]>([]);
   if (!html.current) {
-    html.current = pages
-      .map((p) => {
-        const density = HARD.has(p.type) ? "hard" : "soft";
-        return `<div class="page ${pageClass(p)}" data-density="${density}" role="group" aria-label="${escapeAttr(
-          pageLabel(p)
-        )}">${renderToStaticMarkup(<PageView page={p} />)}</div>`;
-      })
-      .join("");
+    pageHtml.current = pages.map((p) => {
+      const density = HARD.has(p.type) ? "hard" : "soft";
+      return `<div class="page ${pageClass(p)}" data-density="${density}" role="group" aria-label="${escapeAttr(
+        pageLabel(p)
+      )}">${renderToStaticMarkup(<PageView page={p} />)}</div>`;
+    });
+    html.current = pageHtml.current.join("");
   }
 
   useLayoutEffect(() => {
@@ -74,61 +142,22 @@ export function Flipbook({ pages, startPage, onFlip, onInit, reducedMotion }: Pr
     const bookEl = bookRef.current!;
     bookEl.innerHTML = html.current;
 
-    const { w, h, single, portrait } = computeBox(stage);
-    bookEl.style.width = `${w}px`;
-    bookEl.style.height = `${h}px`;
-    lastPortrait.current = portrait;
-
-    // نمرّر أبعاد الصفحة الفعلية كي تتبع الورقة نسبة الجهاز وتملأ الارتفاع المتاح.
-    const flip = new PageFlip(bookEl, {
-      width: single,
-      height: h,
-      size: "stretch",
-      minWidth: 240,
-      maxWidth: 2000,
-      minHeight: 360,
-      maxHeight: 2400,
-      drawShadow: !reducedMotion,
-      maxShadowOpacity: 0.55,
-      flippingTime: reducedMotion ? 380 : 1050,
-      usePortrait: true,
-      autoSize: false,
-      showCover: true,
-      swipeDistance: 18,
-      showPageCorners: true,
-      clickEventForward: true,
-      useMouseEvents: true,
-      mobileScrollSupport: false,
-    });
-
-    flip.loadFromHTML(bookEl.querySelectorAll(".page"));
-    flipRef.current = flip;
-
-    // الانتقال إلى صفحة البداية دون حركة.
-    if (startPage > 0) {
-      try {
-        flip.turnToPage(startPage);
-      } catch {
-        /* تجاهل حدود غير صالحة */
-      }
-    }
-
-    flip.on("flip", (e) => onFlip(e.data as number));
-
-    const api: FlipApi = {
-      next: () => flip.flipNext(),
-      prev: () => flip.flipPrev(),
-      goto: (index: number) => flip.flip(index),
-      getIndex: () => flip.getCurrentPageIndex(),
-      getCount: () => flip.getPageCount(),
-    };
-    onInit(api);
-
+    let flip: PageFlip | null = null;
+    let ro: ResizeObserver | null = null;
     let raf = 0;
+    let destroyed = false;
+
     const onResize = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
+        if (!flip) return;
         const box = computeBox(stage);
+        // إعادة ملاءمة النصّ عند تغيّر الأبعاد (قياسٌ خارج الشاشة)، ثم تحديث المحرّك.
+        try {
+          applyFits(bookEl, computeFits(pageHtml.current, box.single, box.h));
+        } catch {
+          /* تجاهل */
+        }
         bookEl.style.width = `${box.w}px`;
         bookEl.style.height = `${box.h}px`;
         try {
@@ -140,16 +169,83 @@ export function Flipbook({ pages, startPage, onFlip, onInit, reducedMotion }: Pr
       });
     };
 
-    const ro = new ResizeObserver(onResize);
-    ro.observe(stage);
-    window.addEventListener("orientationchange", onResize);
+    const init = () => {
+      if (destroyed) return;
+      const { w, h, single, portrait } = computeBox(stage);
+      lastPortrait.current = portrait;
+
+      // ملاءمةُ النصّ للصفحة: تُقاس الصفحات المرصوصة بعرض صفحةٍ واحدة، ويُخبَز معامل
+      // --fit في كلٍّ منها قبل أن يتولّاها المحرّك، فلا يُقصُّ سطرٌ في الصفحات الكثيفة.
+      fitStackedPages(bookEl, single, h);
+
+      bookEl.style.width = `${w}px`;
+      bookEl.style.height = `${h}px`;
+
+      flip = new PageFlip(bookEl, {
+        width: single,
+        height: h,
+        size: "stretch",
+        minWidth: 240,
+        maxWidth: 2000,
+        minHeight: 360,
+        maxHeight: 2400,
+        drawShadow: !reducedMotion,
+        maxShadowOpacity: 0.55,
+        flippingTime: reducedMotion ? 380 : 1050,
+        usePortrait: true,
+        autoSize: false,
+        showCover: true,
+        swipeDistance: 18,
+        showPageCorners: true,
+        clickEventForward: true,
+        useMouseEvents: true,
+        mobileScrollSupport: false,
+      });
+
+      flip.loadFromHTML(bookEl.querySelectorAll(".page"));
+      flipRef.current = flip;
+
+      if (startPage > 0) {
+        try {
+          flip.turnToPage(startPage);
+        } catch {
+          /* تجاهل حدود غير صالحة */
+        }
+      }
+
+      flip.on("flip", (e) => onFlip(e.data as number));
+      onInit({
+        next: () => flip!.flipNext(),
+        prev: () => flip!.flipPrev(),
+        goto: (index: number) => flip!.flip(index),
+        getIndex: () => flip!.getCurrentPageIndex(),
+        getCount: () => flip!.getPageCount(),
+      });
+
+      ro = new ResizeObserver(onResize);
+      ro.observe(stage);
+      window.addEventListener("orientationchange", onResize);
+    };
+
+    // نؤخّر التهيئة حتى جهوز الخطوط كي يكون قياسُ الملاءمة صحيحاً، مع مهلةٍ احتياطية.
+    let started = false;
+    const go = () => {
+      if (started || destroyed) return;
+      started = true;
+      init();
+    };
+    const ready = (document as unknown as { fonts?: { ready: Promise<unknown> } }).fonts?.ready;
+    Promise.resolve(ready).then(go);
+    const fallback = window.setTimeout(go, 1200);
 
     return () => {
-      ro.disconnect();
+      destroyed = true;
+      window.clearTimeout(fallback);
+      ro?.disconnect();
       window.removeEventListener("orientationchange", onResize);
       cancelAnimationFrame(raf);
       try {
-        flip.destroy();
+        flip?.destroy();
       } catch {
         /* تجاهل */
       }
