@@ -108,20 +108,32 @@ def main():
             else:
                 current["blocks"].append({"kind": "para", "text": apply_errata(stripped)})
 
-    # بناء تمثيلٍ نظيف وإعادة ترقيمٍ صحيح (001، 002، …) بترتيب المستند.
+    # بناء تمثيلٍ نظيف (بلا ترقيمٍ بعد) بترتيب المستند.
     book_pages = []
-    for i, p in enumerate(pages, start=1):
+    for p in pages:
         lines = []
         for b in p["blocks"]:
             if b["kind"] == "para":
                 lines.append({"kind": "para", "text": b["text"]})
             else:
                 lines.append({"kind": "decor"})
-        book_pages.append({
-            "id": f"{i:03d}",
-            "type": p["type"],
-            "lines": lines,
-        })
+        book_pages.append({"type": p["type"], "lines": lines})
+
+    # إهداءٌ مستقلٌّ لشهيدَي الرِّكيب، يُدرَج في صفحةٍ لوحده بعد الإهداءات الأخرى.
+    martyrs_dedication = {
+        "type": "DEDICATION",
+        "lines": [
+            {"kind": "para", "text": "وإلى الأحمدين شهيدَي الرِّكيب"},
+            {"kind": "para", "text": (
+                "أحمد عبد الله الصيدلي وأحمد الصديق أبوالكيك، اللذين ذهبا في ساعة الشدّة "
+                "إلى قلب الخطر بلا وجلٍ نجدةً لأهلهم، فمَضَيا إلى ربّهما، وبقي اسماهما في ذاكرتنا."
+            )},
+        ],
+    }
+    last_ded = max((i for i, p in enumerate(book_pages) if p["type"] == "DEDICATION"),
+                   default=-1)
+    if last_ded >= 0:
+        book_pages.insert(last_ded + 1, martyrs_dedication)
 
     # غلافٌ خلفيّ ختاميّ مقتصِد يُضاف آلياً (عنوان الكتاب وعلامة بصرية)،
     # يُشتقّ من الغلاف الأمامي حتى يبقى متطابقاً معه.
@@ -134,11 +146,12 @@ def main():
         if len(cover_paras) > 1:
             back_lines.append({"kind": "para", "text": cover_paras[1]})
         back_lines.append({"kind": "decor"})
-        book_pages.append({
-            "id": f"{len(book_pages) + 1:03d}",
-            "type": "BACK_COVER",
-            "lines": back_lines,
-        })
+        book_pages.append({"type": "BACK_COVER", "lines": back_lines})
+
+    # ترقيمٌ نهائيٌّ صحيح بعد الإدراج والإضافة.
+    for i, p in enumerate(book_pages, start=1):
+        p["id"] = f"{i:03d}"
+    book_pages = [{"id": p["id"], "type": p["type"], "lines": p["lines"]} for p in book_pages]
 
     # ---------- المدقّقات ----------
     errors = []
