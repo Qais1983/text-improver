@@ -60,20 +60,26 @@ export function playFlip(): void {
 
   const bp = ac.createBiquadFilter();
   bp.type = "bandpass";
-  const f0 = 1700 + Math.random() * 700;
+  const f0 = 1500 + Math.random() * 600;
   bp.frequency.setValueAtTime(f0, now);
-  bp.frequency.exponentialRampToValueAtTime(650, now + dur);
+  bp.frequency.exponentialRampToValueAtTime(600, now + dur);
   bp.Q.value = 0.7;
 
+  // يخفض الحوافّ العالية قليلاً فيصير الحفيف أنعم وأقلّ حِدّة.
+  const lp = ac.createBiquadFilter();
+  lp.type = "lowpass";
+  lp.frequency.value = 5200;
+
   const gain = ac.createGain();
-  const peak = 0.16 + Math.random() * 0.05;
+  const peak = 0.09 + Math.random() * 0.03;
   gain.gain.setValueAtTime(0.0001, now);
   gain.gain.exponentialRampToValueAtTime(peak, now + 0.018);
   gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
   src.connect(hp);
   hp.connect(bp);
-  bp.connect(gain);
+  bp.connect(lp);
+  lp.connect(gain);
   gain.connect(ac.destination);
 
   src.start(now);
