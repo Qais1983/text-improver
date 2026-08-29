@@ -237,13 +237,13 @@ body {
   font-weight: 700;
   color: var(--ink);
 }
-/* اسم المؤلّف أسفل النقاط الثلاثة */
+/* اسم المؤلّف أسفل النقاط الثلاثة — بخطّ أميري الأدبيّ ليليق بالاسم */
 .cover-author {
-  font-family: var(--font-ui);
-  font-size: clamp(15px, 4vw, 18px);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: clamp(17px, 4.6vw, 21px);
   color: var(--copper);
   margin-top: clamp(20px, 4.5vh, 38px);
-  letter-spacing: 0.5px;
 }
 
 /* خيط النور عبر الغلاف */
