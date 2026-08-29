@@ -40,11 +40,12 @@ describe("بنية النسخة السردية", () => {
     }
   });
 
-  it("الكتاب ينتهي عند «وما لم يستطيعوا أخذه» ثم «والنَّفرة ما تزال قائمة»", () => {
+  it("المتن ينتهي بـ«وما لم يستطيعوا أخذه» ثم «ما تزال قائمة»، وآخر صفحة غلافٌ خلفيّ", () => {
     const titles = pages.map((p) => firstPara(p)?.text ?? "");
     const iEnd = titles.findIndex((t) => t.includes("وما لم يستطيعوا أخذه"));
     expect(iEnd).toBeGreaterThan(0);
-    expect(titles[titles.length - 1]).toContain("ما تزال قائمة");
+    expect(pages[pages.length - 1].type).toBe("BACK_COVER");
+    expect(titles[pages.length - 2]).toContain("ما تزال قائمة");
   });
 
   it("صفحتا الشهيدين حاضرتان", () => {

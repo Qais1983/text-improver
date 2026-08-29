@@ -27,6 +27,18 @@ CONTENT_CLOSE = "[[/CONTENT]]"
 DESIGN_NOTE_PREFIX = "[[DESIGN NOTE"
 DECOR = "◆  ◆  ◆"
 
+# تصحيحاتٌ إملائيةٌ مأذونة من المؤلّف، تُطبَّق كاستبدالٍ نصّيّ داخل الفقرات.
+ERRATA = {
+    "في ساعةٍ الامتحان": "في ساعةِ الامتحان",  # صفحة الأحمدان (الجسر)
+    "شيهيدين": "شهيدين",
+}
+
+
+def apply_errata(text):
+    for wrong, right in ERRATA.items():
+        text = text.replace(wrong, right)
+    return text
+
 # أنواع الصفحات المعتمدة في النسخة السردية.
 KNOWN_TYPES = {"COVER", "TITLE", "DEDICATION", "NARRATIVE", "BRIDGE", "BACK_COVER"}
 
@@ -94,7 +106,7 @@ def main():
             if stripped == DECOR:
                 current["blocks"].append({"kind": "decor"})
             else:
-                current["blocks"].append({"kind": "para", "text": stripped})
+                current["blocks"].append({"kind": "para", "text": apply_errata(stripped)})
 
     # بناء تمثيلٍ نظيف وإعادة ترقيمٍ صحيح (001، 002، …) بترتيب المستند.
     book_pages = []
@@ -109,6 +121,23 @@ def main():
             "id": f"{i:03d}",
             "type": p["type"],
             "lines": lines,
+        })
+
+    # غلافٌ خلفيّ ختاميّ مقتصِد يُضاف آلياً (عنوان الكتاب وعلامة بصرية)،
+    # يُشتقّ من الغلاف الأمامي حتى يبقى متطابقاً معه.
+    cover = next((p for p in book_pages if p["type"] == "COVER"), None)
+    if cover:
+        cover_paras = [l["text"] for l in cover["lines"] if l["kind"] == "para"]
+        back_lines = []
+        if cover_paras:
+            back_lines.append({"kind": "para", "text": cover_paras[0]})
+        if len(cover_paras) > 1:
+            back_lines.append({"kind": "para", "text": cover_paras[1]})
+        back_lines.append({"kind": "decor"})
+        book_pages.append({
+            "id": f"{len(book_pages) + 1:03d}",
+            "type": "BACK_COVER",
+            "lines": back_lines,
         })
 
     # ---------- المدقّقات ----------
