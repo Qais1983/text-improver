@@ -5,9 +5,10 @@
   top: calc(env(safe-area-inset-top) + 8px);
   left: 50%;
   transform: translateX(-50%);
+  max-width: calc(100vw - 12px);
   display: flex;
-  gap: 6px;
-  padding: 5px 8px;
+  gap: 2px;
+  padding: 4px 6px;
   border-radius: 999px;
   background: rgba(46, 38, 31, 0.06);
   backdrop-filter: blur(6px);

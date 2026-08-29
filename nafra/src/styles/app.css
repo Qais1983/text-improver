@@ -243,7 +243,10 @@ body {
   opacity: 0.55;
 }
 
-/* صفحة العنوان الداخلية */
+/* صفحة العنوان الداخلية: العنوان الفرعي سميك ليتميّز عن وصف المتن أسفله */
+.title-sub {
+  font-weight: 700;
+}
 .title-desc {
   font-family: var(--font-body);
   font-size: var(--body-size);

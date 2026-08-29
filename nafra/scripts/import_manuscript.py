@@ -32,6 +32,12 @@ CONTENT_CLOSE = "[[/CONTENT]]"
 DESIGN_NOTE_PREFIX = "[[DESIGN NOTE"
 DECOR = "◆  ◆  ◆"
 
+# تصحيحات نصّية مأذونة من المؤلف (لا تمسّ أسماء المساهمين ولا المبالغ ولا الترتيب).
+# مفتاح = النص كما ورد في المخطوط، قيمة = النص المصحّح. تُطبَّق على فقرات المتن فقط.
+ERRATA = {
+    "وما لم يستطعوا أخذه": "وما لم يستطيعوا أخذه",  # صفحة 019: تصحيح إملائي
+}
+
 
 def para_text(p):
     """يجمع نصّ فقرة من عناصر w:t مع احترام الفواصل، دون أي تطبيع للمحارف."""
@@ -113,8 +119,10 @@ def main():
                 if stripped == DECOR:
                     current["blocks"].append({"kind": "decor"})
                 else:
-                    # نحافظ على النص كما ورد تماماً (بلا strip داخلي للمحارف المهمة)
-                    current["blocks"].append({"kind": "para", "text": text.strip()})
+                    # نحافظ على النص كما ورد، مع تطبيق تصحيحات المؤلف المأذونة فقط.
+                    clean = text.strip()
+                    clean = ERRATA.get(clean, clean)
+                    current["blocks"].append({"kind": "para", "text": clean})
         else:  # tbl
             if in_content and current is not None:
                 rows = table_rows(el)

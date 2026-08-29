@@ -4,11 +4,13 @@ import { Toolbar } from "./components/Toolbar";
 import { Toc } from "./components/Toc";
 import { Hint } from "./components/Hint";
 import { buildToc } from "./lib/toc";
+import { playFlip, setSoundEnabled } from "./lib/flipSound";
 import bookPages from "./content/book-pages.json";
 import type { BookPage } from "./lib/types";
 
 const LS_PAGE = "nafra.lastPage";
 const LS_HINT = "nafra.hintSeen";
+const LS_SOUND = "nafra.sound";
 
 function readLS(key: string): string | null {
   try {
@@ -50,12 +52,27 @@ export default function App() {
   const dimTimer = useRef<number | undefined>(undefined);
   const [announce, setAnnounce] = useState("");
 
+  // صوت التقليب — مفعّل افتراضياً، مع إمكان الكتم والحفظ.
+  const [soundOn, setSoundOn] = useState(() => readLS(LS_SOUND) !== "0");
+  useEffect(() => {
+    setSoundEnabled(soundOn);
+  }, [soundOn]);
+  const toggleSound = useCallback(() => {
+    setSoundOn((v) => {
+      const next = !v;
+      writeLS(LS_SOUND, next ? "1" : "0");
+      setSoundEnabled(next);
+      return next;
+    });
+  }, []);
+
   const onInit = useCallback((api: FlipApi) => {
     apiRef.current = api;
   }, []);
 
   const onFlip = useCallback(
     (page: number) => {
+      playFlip();
       setCurrent(page);
       writeLS(LS_PAGE, String(page));
       if (showHint) {
@@ -232,6 +249,8 @@ export default function App() {
         onNext={() => apiRef.current?.next()}
         onZoom={cycleZoom}
         zoomLabel={zoom > 1 ? `تكبير ${zoom}×` : "تكبير"}
+        soundOn={soundOn}
+        onSound={toggleSound}
       />
 
       <div className={`page-indicator ${dim ? "dim" : ""}`}>

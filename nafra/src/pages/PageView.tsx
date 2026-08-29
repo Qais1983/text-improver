@@ -60,7 +60,7 @@ function TitlePage({ page }: { page: BookPage }) {
       <h1 className="cover-title" style={{ fontSize: "clamp(30px,8.5vw,50px)" }}>
         {p[0]?.text}
       </h1>
-      {p[1] && <p className="cover-subtitle">{p[1].text}</p>}
+      {p[1] && <p className="cover-subtitle title-sub">{p[1].text}</p>}
       <Decor />
       {p[2] && <p className="title-desc">{p[2].text}</p>}
     </div>

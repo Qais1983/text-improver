@@ -8,6 +8,8 @@ interface Props {
   onNext: () => void;
   onZoom?: () => void;
   zoomLabel?: string;
+  soundOn?: boolean;
+  onSound?: () => void;
 }
 
 export function Toolbar({
@@ -20,6 +22,8 @@ export function Toolbar({
   onNext,
   onZoom,
   zoomLabel,
+  soundOn,
+  onSound,
 }: Props) {
   return (
     <div className={`toolbar ${dim ? "dim" : ""}`} role="toolbar" aria-label="أدوات الكتاب">
@@ -36,6 +40,21 @@ export function Toolbar({
       {onZoom && (
         <button className="tool-btn" onClick={onZoom} aria-label={zoomLabel || "تكبير"} title={zoomLabel || "تكبير"}>
           <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><line x1="16.5" y1="16.5" x2="21" y2="21" /><line x1="11" y1="8" x2="11" y2="14" /><line x1="8" y1="11" x2="14" y2="11" /></svg>
+        </button>
+      )}
+      {onSound && (
+        <button
+          className="tool-btn"
+          onClick={onSound}
+          aria-label={soundOn ? "كتم صوت التقليب" : "تشغيل صوت التقليب"}
+          aria-pressed={soundOn}
+          title={soundOn ? "صوت التقليب: مُشغّل" : "صوت التقليب: مكتوم"}
+        >
+          {soundOn ? (
+            <svg viewBox="0 0 24 24"><polygon points="4 9 4 15 8 15 13 19 13 5 8 9" /><path d="M16.5 8.5a5 5 0 0 1 0 7" /><path d="M19 6a8 8 0 0 1 0 12" /></svg>
+          ) : (
+            <svg viewBox="0 0 24 24"><polygon points="4 9 4 15 8 15 13 19 13 5 8 9" /><line x1="22" y1="9" x2="16" y2="15" /><line x1="16" y1="9" x2="22" y2="15" /></svg>
+          )}
         </button>
       )}
       <button className="tool-btn" onClick={onShare} aria-label="مشاركة" title="مشاركة">
